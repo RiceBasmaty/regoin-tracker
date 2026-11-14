@@ -1,0 +1,8 @@
+{
+  "_comment": "Letters that Unicode does not split into 'base letter + accent', so they need an explicit plain-Latin spelling. Used by BOTH the Python pipeline (pipeline/textnorm.py) and the browser (shared/normalize.js). Change here only; both sides pick it up. Keys must be lowercase.",
+  "map": {
+    "ß": "ss", "ẞ": "ss", "æ": "ae", "ø": "o", "œ": "oe", "ł": "l", "đ": "d", "ð": "d",
+    "þ": "th", "ı": "i", "ħ": "h", "ŧ": "t", "ŋ": "n", "ĸ": "k", "ŀ": "l", "ſ": "s",
+    "ʼ": "", "'": "", "’": "", "‘": "", "`": "", "´": "", "ʻ": "", "ʿ": "", "ʾ": ""
+  }
+}

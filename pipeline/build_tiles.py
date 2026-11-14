@@ -1,0 +1,49 @@
+"""Step 4: region and country polygons -> PMTiles (one file each), via tippecanoe.
+
+The map (Phase 1) colours regions with MapLibre `feature-state`, using the `id`
+property as feature id (`promoteId: "id"`), so tiles stay tiny: id + country only.
+--detect-shared-borders keeps neighbouring regions' simplified edges identical
+(no slivers or gaps between regions at low zoom).
+"""
+import json
+import shutil
+import subprocess
+import sys
+
+import config as C
+
+LAYERS = {
+    # name: (max zoom, extra flags)
+    "regions": (10, []),
+    "countries": (8, []),
+}
+
+
+def main():
+    if not C.TIPPECANOE.exists():
+        sys.exit(f"tippecanoe not found at {C.TIPPECANOE}; run pipeline/setup.sh")
+    C.DIST.mkdir(parents=True, exist_ok=True)
+    tmp = C.BUILD / "tiles"
+    shutil.rmtree(tmp, ignore_errors=True)
+    tmp.mkdir(parents=True)
+    out = {}
+    for name, (maxzoom, extra) in LAYERS.items():
+        dest = C.DIST / f"{name}.v{C.DATA_VERSION}.pmtiles"
+        cmd = [str(C.TIPPECANOE), "-o", str(tmp / dest.name), "--force", "--quiet",
+               "-l", name, "-Z", "0", "-z", str(maxzoom),
+               "--detect-shared-borders",          # shared edges simplify identically
+               "--no-tiny-polygon-reduction",      # never drop a small region (it might be visited)
+               "--simplification=4",
+               "--maximum-tile-bytes=750000",
+               "--attribution", "© OpenStreetMap contributors, Overture Maps Foundation (ODbL)",
+               "--name", f"Region Tracker {name} {C.DATA_VERSION}",
+               *extra, str(C.BUILD / f"{name}.geojsonl")]
+        subprocess.run(cmd, check=True)
+        shutil.move(tmp / dest.name, dest)
+        out[name] = {"file": dest.name, "mb": round(dest.stat().st_size / 1e6, 1), "maxzoom": maxzoom}
+        print(name, out[name], flush=True)
+    (C.BUILD / "tiles.report.json").write_text(json.dumps(out, indent=2))
+
+
+if __name__ == "__main__":
+    main()

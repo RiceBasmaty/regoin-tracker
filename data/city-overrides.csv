@@ -1,0 +1,8 @@
+# City overrides: fix a city whose GeoNames point falls in the wrong region.
+# Use only when the boundary data is right but the city's point is off. Every row needs a reason.
+#
+# geonameid : GeoNames id of the city
+# region_id : the region key it must belong to (must exist in the build)
+# reason    : why (source link welcome)
+geonameid,region_id,reason
+3646738,VE-A,"Caracas: GeoNames point (10.488,-66.879) lies in Chacao municipality (Miranda); the city centre (Plaza Bolívar, 10.506,-66.915) and the capital are in Distrito Capital."

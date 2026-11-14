@@ -1,0 +1,10 @@
+# Region overrides: exceptions to the automatic rules in pipeline/build_regions.py.
+# One row per exception. Every row MUST have a reason (shown in the build report).
+#
+# match        : an ISO 3166-2 code (e.g. FR-IDF) or an Overture division id (uuid)
+# action       : set_id   -> use `value` as the region key instead of the automatic one
+#                set_name -> use `value` as the English display name
+#                set_country -> move the region to country `value` (ISO 3166-1 alpha-2)
+# value        : the new value
+# reason       : why (source link welcome)
+match,action,value,reason

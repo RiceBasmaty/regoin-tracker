@@ -1,0 +1,11 @@
+# Python / tool environments
+.venv/
+.tools/
+__pycache__/
+.pytest_cache/
+node_modules/
+
+# Pipeline downloads and outputs (rebuilt by `pipeline/run_all.sh`)
+pipeline/cache/
+build/
+dist/

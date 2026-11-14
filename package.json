@@ -1,0 +1,11 @@
+{
+  "name": "region-tracker",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\"",
+    "test:pipeline": ".venv/bin/python -m pytest -q pipeline/tests",
+    "demo:search": "node tests/demo-search.js"
+  }
+}
