@@ -25,6 +25,27 @@ The shared browser/Node code lives in `shared/`:
 - `search.js` turns a typed query into ranked suggestions such as `Paris, Île-de-France, FR`.
 - `visits.js` handles the visited-cities list and derives visited regions and countries from it, plus stats.
 
+## First-time setup on a Mac
+
+1. Install [Homebrew](https://brew.sh) if you don't have it, then install Python and Node:
+   ```bash
+   brew install python@3.13 node@22
+   ```
+2. Get the code, and switch to the working branch:
+   ```bash
+   git clone https://github.com/RiceBasmaty/regoin-tracker.git && cd regoin-tracker && git checkout claude/epic-galileo-d6ziok
+   ```
+3. Build the map data once. This takes about 20 minutes and downloads ~5 GB:
+   ```bash
+   pipeline/run_all.sh
+   ```
+4. Start the app and open http://localhost:5173:
+   ```bash
+   npm install && npm run dev
+   ```
+
+If the page says *"Map data hasn't been built on this computer yet"*, step 3 hasn't finished. Run it, then reload the page.
+
 ## Run the app (Phase 1)
 
 The app needs the pipeline output in `dist/data/` (build it once with `pipeline/run_all.sh`, below).

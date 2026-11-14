@@ -2,12 +2,19 @@
 # Installs the pipeline's tools at pinned versions. Safe to re-run.
 #   - Python packages from pipeline/requirements.txt into .venv/
 #   - tippecanoe (map tile builder) from conda-forge into .tools/env/
-# Needs: python3 >= 3.11, node >= 22, curl, tar (bzip2).
+# Needs: python3 >= 3.11, node >= 22, curl, tar (bzip2). Works on macOS (Apple Silicon/Intel) and Linux.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 TIPPECANOE_VERSION=2.79.0
-MICROMAMBA_URL=https://conda.anaconda.org/conda-forge/linux-64/micromamba-2.10.0-0.tar.bz2
+case "$(uname -s)-$(uname -m)" in
+  Linux-x86_64)            PLATFORM=linux-64 ;;
+  Linux-aarch64)           PLATFORM=linux-aarch64 ;;
+  Darwin-arm64)            PLATFORM=osx-arm64 ;;   # Apple Silicon Mac
+  Darwin-x86_64)           PLATFORM=osx-64 ;;      # Intel Mac
+  *) echo "Unsupported computer: $(uname -s) $(uname -m). Use macOS or Linux (on Windows: WSL)." >&2; exit 1 ;;
+esac
+MICROMAMBA_URL=https://conda.anaconda.org/conda-forge/$PLATFORM/micromamba-2.10.0-0.tar.bz2
 
 if [ ! -x .venv/bin/python ]; then
   python3 -m venv .venv

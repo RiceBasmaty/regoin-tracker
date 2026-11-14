@@ -8,6 +8,7 @@ import { describeRegion } from './ui/region-model.js';
 import { createNotices } from './ui/notices.js';
 import { createProjectionToggle, savedProjection } from './ui/projection-toggle.js';
 import { loadMeta } from './data/meta.js';
+import { dataUrl } from './config.js';
 
 const $ = (sel) => document.querySelector(sel);
 const notices = createNotices($('#notices'));
@@ -47,6 +48,7 @@ function start() {
     },
     onError({ kind, error }) {
       console.warn('[map]', kind, error);
+      if (notices.has('no-data')) return;
       if (kind === 'labels') return; // a missing label font range is cosmetic
       if (!navigator.onLine) return showOffline();
       notices.show('tiles', {
@@ -67,9 +69,20 @@ function start() {
     if (state.selected) card.update(describeRegion(state.selected, { ...meta, visits: state.visits }));
   }).catch((err) => {
     console.warn('[meta]', err);
+    if (notices.has('no-data')) return;
     notices.show('meta', { tone: 'warning', text: 'Region names couldn’t load.', action: { label: 'Try again', onClick: fetchMeta } });
   });
   rm.map.once('load', fetchMeta);
+
+  // Local development: if the data was never built, say exactly how to fix it.
+  if (import.meta.env.DEV) {
+    fetch(dataUrl('manifest.json'), { method: 'HEAD' }).then((res) => {
+      if (res.ok) return;
+      notices.hide('tiles');
+      notices.hide('meta');
+      notices.show('no-data', { tone: 'danger', text: 'Map data hasn’t been built on this computer yet. In a terminal, in the project folder, run: pipeline/run_all.sh (about 20 minutes), then reload.' });
+    }).catch(() => {});
+  }
 
   // Theme follows the device; repaint the map with the matching tokens.
   matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => rm.setTheme(readMapTokens()));

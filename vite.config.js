@@ -7,7 +7,10 @@ import { fileURLToPath } from 'node:url';
 const dataDir = fileURLToPath(new URL('./dist/data', import.meta.url));
 const serveData = () => {
   const handler = sirv(dataDir, { dev: true, etag: true });
-  const mount = (server) => { server.middlewares.use("/data", handler); };
+  // A missing file must be a real 404; otherwise Vite would answer with index.html and
+  // the map would fail with a confusing error.
+  const notFound = (_req, res) => { res.statusCode = 404; res.end('Not found'); };
+  const mount = (server) => { server.middlewares.use('/data', (req, res) => handler(req, res, () => notFound(req, res))); };
   return { name: 'serve-pipeline-data', configureServer: mount, configurePreviewServer: mount };
 };
 
