@@ -132,6 +132,37 @@ Newest first within each phase. Format: decision, reason, alternatives considere
 - Selecting a region by keyboard alone isn't possible yet. Arrow keys, + and − move the map, and Phase 2's search is the keyboard path to a place. Full keyboard and screen-reader review is in Phase 3.
 - Security headers (CSP: MapLibre needs `worker-src` for its module worker), cache headers and CDN compression come in Phase 4.
 
+## Plan revision after Phase 2 feedback (2026-11-14)
+
+### D35. Map-first adding, cities stay the only truth
+- **Feedback (Dmitry):**
+  - users browse the map and want to add from it, not only from the search bar;
+  - with no city names on the map, it's easy to forget a city you visited.
+- **Decision (agreed):**
+  - show cities on the map as dots; names appear when zoomed in, and zoomed out only dots;
+  - visited cities' dots stand out;
+  - a map control hides or shows the dots;
+  - tapping a city opens a small popup with Add, or Remove;
+  - the region card gets quick-add chips (the region's largest cities), a region-scoped search, and remove buttons.
+- **Rejected (both):** marking a region visited without a city. It would break data rule 1 and every future stat that depends on cities (list, trips, timeline).
+- **Cost:** a new city-places tile layer. It's loaded after the first frame, so it doesn't count against the speed budget.
+
+### D36. Region level chosen per country (`data/region-levels.csv`)
+- **Feedback (Dmitry):**
+  - UK regions (England, Scotland…) are too coarse;
+  - Slovenia's 212 municipalities are too fine.
+
+  A scan of region counts per UN country found three more outliers: North Macedonia 71, Malta 68, and Serbia, which has only 2.
+- **Decision (agreed):**
+  - **UK:** England's 48 ceremonial counties, Scotland's 32 council areas, Wales' 22 principal areas, Northern Ireland's 11 districts. London is one "Greater London" region, not 33 boroughs.
+  - **Slovenia:** 12 statistical regions.
+  - **North Macedonia:** 8 statistical regions.
+  - **Malta:** 6 statistical regions.
+  - **Serbia:** 29 districts + Belgrade.
+  - Everything else stays as in D3.
+- **How:** a per-country level table plus documented grouping tables (smaller official units → the agreed regions) where Overture has no ready-made level. That's needed for the UK ceremonial counties and the statistical regions. Keys are ISO 3166-2 where it exists, otherwise documented fallback keys (D4).
+- **Saved cities:** a new data version triggers the automatic re-check (D32), so cities move to their new regions and none are lost.
+
 ## Phase 2: add a city (2026-11-14)
 
 ### D31. Speed is a separate report until Phase 4

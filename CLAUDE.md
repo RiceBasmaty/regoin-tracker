@@ -38,7 +38,7 @@ Visited cities:
 ## Non-negotiable data rules
 
 1. **The city is the source of truth.** Store visits as cities (`cityId, name, lat, lon, countryIso, regionId, addedAt`). Visited regions and countries are always **derived** from the stored cities, never stored as independent truth.
-2. **Regions are OSM `admin_level = 4`**, sourced from Overture Maps *divisions*. If a country has no level-4 units, fall back to the nearest available level (3, then 5, then 6). Keep a small override table (`data/region-overrides.*`) for exceptions, and document each one.
+2. **Regions are OSM `admin_level = 4`**, sourced from Overture Maps *divisions*. If a country has no level-4 units, fall back to the nearest available level (3, then 5, then 6). Keep a small override table (`data/region-overrides.*`) for exceptions, and document each one. Some countries use a different level by decision (`data/region-levels.csv`, DECISIONS D36): UK ceremonial counties / council areas, Slovenia, North Macedonia and Malta statistical regions, Serbia districts.
 3. **Region keys are ISO 3166-2 codes** (e.g. `FR-IDF`, `SE-AB`). Use a documented fallback ID only where ISO has no code.
 4. **A city's region is precomputed at build time** with a spatial join (point-in-polygon) and shipped inside the city index. The browser does no geometry lookups for indexed cities. A runtime point-in-polygon fallback is fine for places that aren't in the index.
 5. **Data pipeline is reproducible.** Scripts in `/pipeline`, pinned to an Overture release (e.g. `2026-10-21.0`), re-runnable from scratch. Generated files are versioned (e.g. `regions.v2026-10.pmtiles`) so caches never serve mismatched data.
@@ -66,11 +66,12 @@ Visited cities:
 
 ## Phases
 
-0. **Data pipeline:** region and country PMTiles, a city index with precomputed regions, and validation tests. No UI yet.
-1. **Map shell:** map/globe toggle, borders, hover, click popup.
-2. **Add a city:** the search flow above, saving visits, region highlighting, city dots.
-3. **Progress and polish:** visited-cities list, stats (countries, regions, % of regions per country), export/import, accessibility, attribution.
-4. **Deploy and harden:** Cloudflare, caching, security headers (CSP), error logging, performance check.
-5. **Post-MVP:** accounts and sync (Supabase).
+0. **Data pipeline:** region and country PMTiles, a city index with precomputed regions, and validation tests. No UI yet. ✅
+1. **Map shell:** map/globe toggle, borders, hover, click popup. ✅
+2. **Add a city (search):** the search flow above, saving visits, region highlighting, city dots. ✅
+3. **Map-first adding + better regions:** cities on the map (dots, names when zoomed in, show/hide control), tap a city → popup with Add/Remove, quick-add chips and scoped search in the region card, per-country region levels (D35, D36). Never a region without a city.
+4. **Progress and polish:** visited-cities list, small counter (cities · countries · regions), export/import, flags, accessibility, attribution.
+5. **Deploy and harden:** Cloudflare (free tier), caching, edge-served tiles, security headers (CSP), error logging, performance check.
+6. **Post-MVP:** accounts and sync (Supabase).
 
 Definition of done for each phase: it works, it's tested, `DECISIONS.md` is updated, `README.md` explains how to run it, and Dmitry has a click-through checklist.
