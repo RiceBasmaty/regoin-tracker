@@ -138,7 +138,7 @@ function start() {
       if (res.ok) return;
       notices.hide('tiles');
       notices.hide('meta');
-      notices.show('no-data', { tone: 'danger', text: 'Map data hasn’t been built on this computer yet. In a terminal, in the project folder, run: pipeline/run_all.sh (about 20 minutes), then reload.' });
+      notices.show('no-data', { tone: 'danger', text: 'Map data isn’t in this project folder yet. The terminal running “npm run dev” shows which folder it’s using. In that folder, run pipeline/run_all.sh (about 20 minutes, once), then reload.' });
     }).catch(() => {});
   }
 

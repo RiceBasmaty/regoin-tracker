@@ -3,6 +3,8 @@
 import { defineConfig } from 'vite';
 import sirv from 'sirv';
 import { fileURLToPath } from 'node:url';
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 const dataDir = fileURLToPath(new URL('./dist/data', import.meta.url));
 const serveData = () => {
@@ -10,7 +12,14 @@ const serveData = () => {
   // A missing file must be a real 404; otherwise Vite would answer with index.html and
   // the map would fail with a confusing error.
   const notFound = (_req, res) => { res.statusCode = 404; res.end('Not found'); };
-  const mount = (server) => { server.middlewares.use('/data', (req, res) => handler(req, res, () => notFound(req, res))); };
+  const mount = (server) => {
+    server.middlewares.use('/data', (req, res) => handler(req, res, () => notFound(req, res)));
+    // Say clearly, in the terminal, which folder the app reads its map data from.
+    const manifest = resolve(dataDir, 'v2026-10', 'manifest.json');
+    const projectDir = resolve(dataDir, '..', '..');
+    if (existsSync(manifest)) console.log(`\n  Map data: found in ${resolve(dataDir)}\n`);
+    else console.warn(`\n  ⚠ Map data NOT found in ${resolve(dataDir)}\n    Run this in ${projectDir}:  pipeline/run_all.sh   (about 20 minutes, once)\n`);
+  };
   return { name: 'serve-pipeline-data', configureServer: mount, configurePreviewServer: mount };
 };
 
