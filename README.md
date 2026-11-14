@@ -1,7 +1,7 @@
 # Region Tracker
 
 Log the cities you've visited; each one fills in its region and country on a world map (flat or globe).
-Product brief and rules: [`CLAUDE.md`](CLAUDE.md). Why things are built the way they are: [`DECISIONS.md`](DECISIONS.md).
+Product brief and rules: [`CLAUDE.md`](CLAUDE.md). The plan for the remaining phases: [`ROADMAP.md`](ROADMAP.md). Why things are built the way they are: [`DECISIONS.md`](DECISIONS.md).
 
 **Status:**
 - Phase 0 (data pipeline): done.

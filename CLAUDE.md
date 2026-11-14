@@ -43,7 +43,7 @@ Visited cities:
 4. **A city's region is precomputed at build time** with a spatial join (point-in-polygon) and shipped inside the city index. The browser does no geometry lookups for indexed cities. A runtime point-in-polygon fallback is fine for places that aren't in the index.
 5. **Data pipeline is reproducible.** Scripts in `/pipeline`, pinned to an Overture release (e.g. `2026-10-21.0`), re-runnable from scratch. Generated files are versioned (e.g. `regions.v2026-10.pmtiles`) so caches never serve mismatched data.
 6. **Licences and attribution.** Overture/OSM data is ODbL: show visible attribution in the map; keep the derived boundary data separate from user data. City data source licence (e.g. GeoNames CC BY 4.0) must also be attributed. Do not use GADM (non-commercial licence).
-7. **Disputed borders:** use the de facto (who controls the territory) view by default; keep it switchable via Overture's perspectives later.
+7. **Disputed borders:** use Overture's neutral default view (decided by Dmitry 2026-11-14, DECISIONS D8): disputed areas are their own territories (Kosovo, Gaza Strip, West Bank, Golan, Kuril islands…) and Crimea is shown inside Ukraine. Keep it switchable later if Overture ships perspectives. Only the 193 UN member states count as "countries" (D16).
 
 ## Architecture direction (you may change with a recorded reason)
 

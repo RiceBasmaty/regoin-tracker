@@ -132,6 +132,30 @@ Newest first within each phase. Format: decision, reason, alternatives considere
 - Selecting a region by keyboard alone isn't possible yet. Arrow keys, + and − move the map, and Phase 2's search is the keyboard path to a place. Full keyboard and screen-reader review is in Phase 3.
 - Security headers (CSP: MapLibre needs `worker-src` for its module worker), cache headers and CDN compression come in Phase 4.
 
+## Plan approval (2026-11-14)
+
+### D26. Colours stay; the token system becomes palette + roles
+- **Decision (Dmitry):** keep the current colours for now. Make them easy to replace when the design system is done.
+- **How:** `tokens.css` gets two layers.
+  - **Palette:** raw colours, e.g. `--palette-teal-600`.
+  - **Roles:** what each colour is used for, e.g. `--color-accent: var(--palette-teal-600)`, `--map-visited-fill`.
+  - Components and the map use **roles only**. A new design system replaces the palette, and remaps a few roles if needed; no component code changes.
+
+### D27. Visited countries get a light outline; adding shows "Added X · Undo"
+- **Decision (Dmitry):** a country with at least one visited city gets a light accent outline. Its regions still carry the fill. Adding a city shows a short confirmation with Undo.
+
+### D28. A small counter now; a stats page after launch
+- **Decision (Dmitry):** Phase 3 shows only a very small counter (cities · countries · regions). A dedicated page with timeline, single-country view and trips comes after launch. Per-country counters come with accounts (Phase 5).
+
+### D29. Phase 4 runs on free tiers; error logging is our own endpoint
+- **Decision:** there's no domain yet, so the free Cloudflare plans and the free `*.pages.dev` address. Errors from users' browsers are sent (deduplicated and rate-limited) to a small endpoint on the Worker we need for tiles anyway, and kept in Cloudflare's own logs.
+- **Reason:** it's free and private (no third party sees users' data), there's no extra account or cookie notice, and it reuses infrastructure we already run.
+- **Alternatives:** Sentry (richer dashboards, but a third party, and its free tier is capped). We can add it later if the volume or the need for analysis grows.
+
+### D30. Flags in the region card (Phase 3)
+- **Country flags:** an MIT-licensed SVG flag set, which renders the same on every device. Emoji flags show as letters on Windows.
+- **Region flags:** a pipeline step follows each region's Wikidata link to its flag on Wikimedia Commons. It keeps only public-domain or attribution-licensed files, cleans each SVG (removes scripts), records credits, and falls back to the country flag. Expected coverage is about 60–80% of regions. The build environment will need access to `www.wikidata.org` and `commons.wikimedia.org`.
+
 ## Answered product questions (2026-11-14)
 
 1. Disputed borders: keep Overture's neutral view (D8).
