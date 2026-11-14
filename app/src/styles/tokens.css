@@ -1,12 +1,63 @@
 /*
- * DESIGN TOKENS: the single place for colours, type, spacing, radii, shadows and motion.
- * The map reads its colours from the --map-* tokens too (see src/map/tokens.js),
- * so changing a value here restyles both the interface and the map.
+ * DESIGN TOKENS: the only place where the look is defined.
  *
- * Theme: light by default; dark follows the device setting unless the page sets
- * data-theme="light" | "dark" on <html>.
+ * Two layers:
+ *   1. PALETTE  (--palette-*)  raw colours. A new design system replaces these.
+ *   2. ROLES    (--color-*, --map-*, sizes)  what each colour is FOR. Components
+ *      and the map use roles only, never palette names or hex values.
+ * The map reads its --map-* roles at runtime (src/map/tokens.js), so changing a
+ * value here restyles the interface and the map together.
+ *
+ * Theme: light by default; dark follows the device unless <html data-theme="light|dark">.
+ * Checked by tests/tokens.test.js: WCAG AA contrast of every text/background role
+ * pair in both themes, and that the two dark-theme blocks are identical.
  */
 :root {
+  /* ===== 1. PALETTE ===== */
+  --palette-white: #ffffff;
+  --palette-paper: #fbfbf8;        /* warm off-white: land */
+  --palette-mist-50: #f4f6f8;
+  --palette-mist-100: #e9f0f5;
+  --palette-mist-150: #e1e5ea;
+  --palette-mist-200: #dbe6ee;     /* light sea */
+  --palette-mist-300: #d3d8de;
+  --palette-slate-400: #9aa4af;
+  --palette-slate-500: #5a6573;
+  --palette-slate-700: #2d3743;
+  --palette-slate-900: #1b2430;
+
+  --palette-night-1000: #0b131b;   /* dark sea */
+  --palette-night-950: #0e141b;
+  --palette-night-900: #161e27;
+  --palette-night-850: #222d39;    /* dark land */
+  --palette-night-800: #2a3541;
+  --palette-night-750: #334354;
+  --palette-night-700: #1a2a38;
+  --palette-night-600: #5a6b7d;
+  --palette-night-400: #93a0ae;
+  --palette-night-300: #a3afbd;
+  --palette-night-200: #c9d2dc;
+  --palette-night-100: #e8edf2;
+
+  --palette-teal-50: #e3f2ef;
+  --palette-teal-400: #4fbfae;
+  --palette-teal-600: #1f7a6d;
+  --palette-teal-700: #17665b;
+  --palette-teal-800: #15302c;
+  --palette-teal-950: #07201c;
+
+  --palette-amber-50: #fff6e0;
+  --palette-amber-200: #ffdf9a;
+  --palette-amber-800: #3a2e10;
+  --palette-amber-900: #6b4a00;
+  --palette-red-50: #fdeceb;
+  --palette-red-200: #ffb4ab;
+  --palette-red-800: #3d1714;
+  --palette-red-900: #8a1f17;
+  --palette-blue-300: #7aa7ff;
+  --palette-blue-600: #2563eb;
+
+  /* ===== 2. ROLES (light theme) ===== */
   color-scheme: light;
 
   /* Type */
@@ -40,6 +91,7 @@
 
   /* Layout */
   --card-width: 360px;
+  --search-width: 440px;
   --control-height: 40px;
   --gutter: 16px;
 
@@ -47,120 +99,145 @@
   --duration-fast: 120ms;
   --duration-normal: 220ms;
   --easing: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --toast-duration: 6s;
 
-  /* Interface colours (all text pairs meet WCAG 2.1 AA, see tests/tokens.test.js) */
-  --color-bg: #f4f6f8;
-  --color-surface: #ffffff;
-  --color-surface-raised: rgba(255, 255, 255, 0.92);
-  --color-text: #1b2430;
-  --color-text-muted: #5a6573;
-  --color-border: #e1e5ea;
-  --color-accent: #1f7a6d;          /* calm teal */
-  --color-accent-text: #ffffff;
-  --color-accent-soft: #e3f2ef;
-  --color-focus: #2563eb;
-  --color-warning-bg: #fff6e0;
-  --color-warning-text: #6b4a00;
-  --color-danger-bg: #fdeceb;
-  --color-danger-text: #8a1f17;
+  /* Interface colours */
+  --color-bg: var(--palette-mist-50);
+  --color-surface: var(--palette-white);
+  --color-surface-raised: rgba(255, 255, 255, 0.94);
+  --color-surface-hover: var(--palette-mist-50);
+  --color-text: var(--palette-slate-900);
+  --color-text-muted: var(--palette-slate-500);
+  --color-border: var(--palette-mist-150);
+  --color-accent: var(--palette-teal-600);
+  --color-accent-text: var(--palette-white);
+  --color-accent-soft: var(--palette-teal-50);
+  --color-focus: var(--palette-blue-600);
+  --color-toast-bg: var(--palette-slate-900);
+  --color-toast-text: var(--palette-white);
+  --color-toast-action: var(--palette-teal-400);
+  --color-warning-bg: var(--palette-amber-50);
+  --color-warning-text: var(--palette-amber-900);
+  --color-danger-bg: var(--palette-red-50);
+  --color-danger-text: var(--palette-red-900);
   --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px rgba(16, 24, 40, 0.10);
   --shadow-control: 0 1px 2px rgba(16, 24, 40, 0.08), 0 2px 8px rgba(16, 24, 40, 0.06);
   --backdrop-blur: 12px;
 
-  /* Map colours */
-  --map-water: #dbe6ee;
-  --map-space: #f4f6f8;             /* around the globe */
-  --map-atmosphere: #e9f0f5;
-  --map-land: #fbfbf8;
-  --map-region-line: #d3d8de;
-  --map-country-line: #9aa4af;
-  --map-hover-fill: #1f7a6d;
+  /* Map colours and sizes */
+  --map-water: var(--palette-mist-200);
+  --map-space: var(--palette-mist-50);            /* around the globe */
+  --map-atmosphere: var(--palette-mist-100);
+  --map-land: var(--palette-paper);
+  --map-region-line: var(--palette-mist-300);
+  --map-country-line: var(--palette-slate-400);
+  --map-hover-fill: var(--palette-teal-600);
   --map-hover-opacity: 0.10;
-  --map-selected-fill: #1f7a6d;
+  --map-selected-fill: var(--palette-teal-600);
   --map-selected-opacity: 0.18;
-  --map-selected-line: #1f7a6d;
-  --map-visited-fill: #1f7a6d;      /* Phase 2 */
+  --map-selected-line: var(--palette-teal-600);
+  --map-visited-fill: var(--palette-teal-600);
   --map-visited-opacity: 0.42;
-  --map-label: #5a6573;
-  --map-label-strong: #2d3743;
-  --map-label-halo: #fbfbf8;
+  --map-visited-country-line: var(--palette-teal-600);
+  --map-visited-country-opacity: 0.55;
+  --map-city-dot: var(--palette-teal-600);
+  --map-city-dot-stroke: var(--palette-white);
+  --map-label: var(--palette-slate-500);
+  --map-label-strong: var(--palette-slate-700);
+  --map-label-halo: var(--palette-paper);
 }
 
-/* Dark theme: same names, different values. */
+/* Dark theme: same role names, mapped to the dark end of the palette. */
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-bg: #0e141b;
-  --color-surface: #161e27;
-  --color-surface-raised: rgba(22, 30, 39, 0.92);
-  --color-text: #e8edf2;
-  --color-text-muted: #a3afbd;
-  --color-border: #2a3541;
-  --color-accent: #4fbfae;
-  --color-accent-text: #07201c;
-  --color-accent-soft: #15302c;
-  --color-focus: #7aa7ff;
-  --color-warning-bg: #3a2e10;
-  --color-warning-text: #ffdf9a;
-  --color-danger-bg: #3d1714;
-  --color-danger-text: #ffb4ab;
+  --color-bg: var(--palette-night-950);
+  --color-surface: var(--palette-night-900);
+  --color-surface-raised: rgba(22, 30, 39, 0.94);
+  --color-surface-hover: var(--palette-night-850);
+  --color-text: var(--palette-night-100);
+  --color-text-muted: var(--palette-night-300);
+  --color-border: var(--palette-night-800);
+  --color-accent: var(--palette-teal-400);
+  --color-accent-text: var(--palette-teal-950);
+  --color-accent-soft: var(--palette-teal-800);
+  --color-focus: var(--palette-blue-300);
+  --color-toast-bg: var(--palette-night-100);
+  --color-toast-text: var(--palette-night-950);
+  --color-toast-action: var(--palette-teal-700);
+  --color-warning-bg: var(--palette-amber-800);
+  --color-warning-text: var(--palette-amber-200);
+  --color-danger-bg: var(--palette-red-800);
+  --color-danger-text: var(--palette-red-200);
   --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.45);
   --shadow-control: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 
-  --map-water: #0b131b;
-  --map-space: #0e141b;
-  --map-atmosphere: #1a2a38;
-  --map-land: #222d39;
-  --map-region-line: #334354;
-  --map-country-line: #5a6b7d;
-  --map-hover-fill: #4fbfae;
+  --map-water: var(--palette-night-1000);
+  --map-space: var(--palette-night-950);
+  --map-atmosphere: var(--palette-night-700);
+  --map-land: var(--palette-night-850);
+  --map-region-line: var(--palette-night-750);
+  --map-country-line: var(--palette-night-600);
+  --map-hover-fill: var(--palette-teal-400);
   --map-hover-opacity: 0.14;
-  --map-selected-fill: #4fbfae;
+  --map-selected-fill: var(--palette-teal-400);
   --map-selected-opacity: 0.22;
-  --map-selected-line: #4fbfae;
-  --map-visited-fill: #4fbfae;
+  --map-selected-line: var(--palette-teal-400);
+  --map-visited-fill: var(--palette-teal-400);
   --map-visited-opacity: 0.45;
-  --map-label: #93a0ae;
-  --map-label-strong: #c9d2dc;
-  --map-label-halo: #222d39;
+  --map-visited-country-line: var(--palette-teal-400);
+  --map-visited-country-opacity: 0.6;
+  --map-city-dot: var(--palette-teal-400);
+  --map-city-dot-stroke: var(--palette-night-1000);
+  --map-label: var(--palette-night-400);
+  --map-label-strong: var(--palette-night-200);
+  --map-label-halo: var(--palette-night-850);
 }
 
 /* Follow the device setting unless a theme was chosen explicitly.
-   Keep in sync with the block above (tests/tokens.test.js checks they are identical). */
+   Must stay identical to the block above (tests/tokens.test.js checks). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --color-bg: #0e141b;
-    --color-surface: #161e27;
-    --color-surface-raised: rgba(22, 30, 39, 0.92);
-    --color-text: #e8edf2;
-    --color-text-muted: #a3afbd;
-    --color-border: #2a3541;
-    --color-accent: #4fbfae;
-    --color-accent-text: #07201c;
-    --color-accent-soft: #15302c;
-    --color-focus: #7aa7ff;
-    --color-warning-bg: #3a2e10;
-    --color-warning-text: #ffdf9a;
-    --color-danger-bg: #3d1714;
-    --color-danger-text: #ffb4ab;
+    --color-bg: var(--palette-night-950);
+    --color-surface: var(--palette-night-900);
+    --color-surface-raised: rgba(22, 30, 39, 0.94);
+    --color-surface-hover: var(--palette-night-850);
+    --color-text: var(--palette-night-100);
+    --color-text-muted: var(--palette-night-300);
+    --color-border: var(--palette-night-800);
+    --color-accent: var(--palette-teal-400);
+    --color-accent-text: var(--palette-teal-950);
+    --color-accent-soft: var(--palette-teal-800);
+    --color-focus: var(--palette-blue-300);
+    --color-toast-bg: var(--palette-night-100);
+    --color-toast-text: var(--palette-night-950);
+    --color-toast-action: var(--palette-teal-700);
+    --color-warning-bg: var(--palette-amber-800);
+    --color-warning-text: var(--palette-amber-200);
+    --color-danger-bg: var(--palette-red-800);
+    --color-danger-text: var(--palette-red-200);
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.45);
     --shadow-control: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
 
-    --map-water: #0b131b;
-    --map-space: #0e141b;
-    --map-atmosphere: #1a2a38;
-    --map-land: #222d39;
-    --map-region-line: #334354;
-    --map-country-line: #5a6b7d;
-    --map-hover-fill: #4fbfae;
+    --map-water: var(--palette-night-1000);
+    --map-space: var(--palette-night-950);
+    --map-atmosphere: var(--palette-night-700);
+    --map-land: var(--palette-night-850);
+    --map-region-line: var(--palette-night-750);
+    --map-country-line: var(--palette-night-600);
+    --map-hover-fill: var(--palette-teal-400);
     --map-hover-opacity: 0.14;
-    --map-selected-fill: #4fbfae;
+    --map-selected-fill: var(--palette-teal-400);
     --map-selected-opacity: 0.22;
-    --map-selected-line: #4fbfae;
-    --map-visited-fill: #4fbfae;
+    --map-selected-line: var(--palette-teal-400);
+    --map-visited-fill: var(--palette-teal-400);
     --map-visited-opacity: 0.45;
-    --map-label: #93a0ae;
-    --map-label-strong: #c9d2dc;
-    --map-label-halo: #222d39;
+    --map-visited-country-line: var(--palette-teal-400);
+    --map-visited-country-opacity: 0.6;
+    --map-city-dot: var(--palette-teal-400);
+    --map-city-dot-stroke: var(--palette-night-1000);
+    --map-label: var(--palette-night-400);
+    --map-label-strong: var(--palette-night-200);
+    --map-label-halo: var(--palette-night-850);
   }
 }

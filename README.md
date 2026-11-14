@@ -5,7 +5,8 @@ Product brief and rules: [`CLAUDE.md`](CLAUDE.md). The plan for the remaining ph
 
 **Status:**
 - Phase 0 (data pipeline): done.
-- Phase 1 (map shell): done. You can open the map, switch between flat and globe, hover over and click regions, and see dark mode, the phone layout and error messages.
+- Phase 1 (map shell): done. Flat map and globe, hover, a region card when you click, dark mode, phone layout, error messages.
+- Phase 2 (add a city): done. Search, save cities on the device, city dots, visited regions and countries, fly-to, "Added · Undo".
 
 ## What Phase 0 produces
 
@@ -55,13 +56,15 @@ npm install          # once
 npm run dev          # http://localhost:5173 , live reload while editing
 npm run build        # production build into dist/app/
 npm run preview      # serve the production build at http://localhost:4173
-npm run test:e2e     # real-browser checks + speed budget; screenshots in tests/e2e/screenshots/
+npm run test:e2e     # real-browser checks of every user flow; screenshots in tests/e2e/screenshots/
+npm run perf         # speed report: first map frame on an emulated mid-range phone (4G, slow 4G)
 ```
 
 In the browser console, `regionTracker.map` and `regionTracker.state` help with troubleshooting. Load timing appears as `rt:map-loaded` and `rt:map-ready` in DevTools → Performance.
 
 Where things are:
-- **Look and feel:** every colour, size and spacing value lives in `app/src/styles/tokens.css`. The map reads its colours from there too.
+- **Look and feel:** `app/src/styles/tokens.css`. Raw colours are in the *palette* section and their uses are in the *roles* section; to restyle, change the palette. The map reads its colours from there too.
+- **Saved cities:** stored in the browser (IndexedDB) by `app/src/data/storage.js` and `visits-store.js`. To start fresh: DevTools → Application → Storage → Clear site data.
 - **Map layers:** `app/src/map/style.js`.
 - **Card text:** `app/src/ui/region-model.js`.
 - **Data location:** `app/src/config.js` (set `VITE_DATA_BASE_URL` for a CDN).

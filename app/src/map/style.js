@@ -27,6 +27,9 @@ export function themedPaint(t) {
     'regions-line': { 'line-color': t['region-line'] },
     'countries-line': { 'line-color': t['country-line'] },
     'regions-selected-line': { 'line-color': t['selected-line'] },
+    'countries-visited-line': { 'line-color': t['visited-country-line'],
+      'line-opacity': ['case', ['boolean', ['feature-state', 'visited'], false], t['visited-country-opacity'], 0] },
+    'city-dots': { 'circle-color': t['city-dot'], 'circle-stroke-color': t['city-dot-stroke'] },
     'country-labels': { 'text-color': t['label-strong'], 'text-halo-color': t['label-halo'] },
     'region-labels': { 'text-color': t.label, 'text-halo-color': t['label-halo'] },
   };
@@ -63,6 +66,7 @@ export function buildStyle({ tokens: t, regionsUrl, countriesUrl, glyphs, projec
       // Filled from countries/regions JSON after the first frame (labels are not needed to start).
       'country-labels': emptyLabels,
       'region-labels': emptyLabels,
+      'visited-cities': emptyLabels,   // the user's cities (dots), set from the visits store
     },
     layers: [
       { id: 'background', type: 'background', paint: paint.background },
@@ -83,6 +87,17 @@ export function buildStyle({ tokens: t, regionsUrl, countriesUrl, glyphs, projec
         layout: { 'line-join': 'round' },
         paint: { ...paint['regions-selected-line'], 'line-width': 2,
                  'line-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 1, 0] },
+      },
+      {
+        id: 'countries-visited-line', type: 'line', source: 'countries', 'source-layer': 'countries',
+        layout: { 'line-join': 'round' },
+        paint: { ...paint['countries-visited-line'], 'line-width': ['interpolate', ['linear'], ['zoom'], 0, 1.2, 4, 2, 8, 2.6] },
+      },
+      {
+        id: 'city-dots', type: 'circle', source: 'visited-cities',
+        paint: { ...paint['city-dots'], 'circle-stroke-width': 1.5,
+                 'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, 2.5, 5, 4, 10, 6],
+                 'circle-pitch-alignment': 'map' },
       },
       {
         id: 'region-labels', type: 'symbol', source: 'region-labels', minzoom: 4.5,

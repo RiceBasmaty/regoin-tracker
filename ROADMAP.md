@@ -6,8 +6,8 @@ The plan approved by Dmitry on 2026-11-14. The details of each finished phase li
 |---|---|
 | 0. Data pipeline | ✅ done |
 | 1. Map shell | ✅ done |
-| 2. Add a city | 🚧 in progress |
-| 3. Progress and polish | planned |
+| 2. Add a city | ✅ done |
+| 3. Progress and polish | next |
 | 4. Deploy and harden | planned |
 | 5. Accounts and sync | later |
 

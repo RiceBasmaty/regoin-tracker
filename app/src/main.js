@@ -6,13 +6,20 @@ import { createRegionMap, webglSupported } from './map/region-map.js';
 import { createRegionCard } from './ui/region-card.js';
 import { describeRegion } from './ui/region-model.js';
 import { createNotices } from './ui/notices.js';
+import { createToast } from './ui/toast.js';
+import { createSearchBox } from './ui/search-box.js';
 import { createProjectionToggle, savedProjection } from './ui/projection-toggle.js';
 import { loadMeta } from './data/meta.js';
-import { dataUrl } from './config.js';
+import { openStorage } from './data/storage.js';
+import { createVisitsStore } from './data/visits-store.js';
+import { createSearchIndex } from './data/search-index.js';
+import { deriveVisited } from '../../shared/visits.js';
+import { dataUrl, DATA_VERSION } from './config.js';
 
 const $ = (sel) => document.querySelector(sel);
 const notices = createNotices($('#notices'));
-const state = { meta: null, visits: [], selected: null };
+const toast = createToast($('#toast'));
+const state = { meta: null, selected: null, store: null };
 
 function fatal(text) {
   $('#map').dataset.state = 'error';
@@ -26,7 +33,10 @@ if (!webglSupported()) {
 }
 
 function start() {
-  const card = createRegionCard($('#region-card'), { onClose: () => { rm.select(null); state.selected = null; card.hide(); } });
+  const visits = () => state.store?.visits ?? [];
+  const cardModel = (id) => describeRegion(id, { ...state.meta, visits: visits() });
+  const closeCard = () => { rm.select(null); state.selected = null; card.hide(); };
+  const card = createRegionCard($('#region-card'), { onClose: closeCard });
   const tooltip = $('#tooltip');
   const projection = savedProjection('globe');
 
@@ -37,7 +47,7 @@ function start() {
     onSelect(id) {
       state.selected = id;
       if (id == null) return card.hide();
-      card.show(describeRegion(id, { ...state.meta, visits: state.visits }));
+      card.show(cardModel(id));
     },
     onHover(id, point) {
       if (id == null || !state.meta) { tooltip.hidden = true; return; }
@@ -61,12 +71,60 @@ function start() {
 
   createProjectionToggle($('#projection-toggle'), { value: projection, onChange: (v) => rm.setProjection(v) });
 
-  // Names and labels are not needed for the first frame: load them right after.
+  // ---------- visited cities: the device store is the source of truth ----------
+  const index = createSearchIndex();
+  function renderVisits() {
+    const { regions, countries } = deriveVisited(visits());
+    rm.setVisited({ regions: [...regions.keys()], countries: [...countries.keys()], cities: visits() });
+    if (state.selected) card.update(cardModel(state.selected));
+    search.refresh();
+  }
+
+  async function addCity(s) {
+    rm.flyTo(s);
+    if (!state.store) return;
+    try {
+      const { added, visit } = await state.store.add(s);
+      if (!added) { toast.show(`${s.name} is already on your list`); return; }
+      toast.show(`Added ${visit.name}`, {
+        label: 'Undo',
+        onClick: async () => { await state.store.remove(visit.cityId); toast.show(`Removed ${visit.name}`); },
+      });
+    } catch (err) {
+      console.warn('[store]', err);
+      notices.show('save', { tone: 'danger', text: `${s.name} couldn’t be saved on this device. Is the storage full?` });
+    }
+  }
+
+  const search = createSearchBox($('#search'), {
+    index,
+    isVisited: (cityId) => state.store?.has(cityId) ?? false,
+    onPick: addCity,
+  });
+
+  // Opened after the first map frame: saved cities are drawn on top of an already visible map.
+  const openStore = () => openStorage().then(async (storage) => {
+    const channel = 'BroadcastChannel' in window ? new BroadcastChannel('region-tracker') : null;
+    const store = createVisitsStore({ storage, dataVersion: DATA_VERSION, findCity: index.findCity, channel });
+    state.store = store;
+    store.subscribe(renderVisits);
+    await store.init().catch((err) => console.warn('[store] re-check after data update failed; will retry next visit', err));
+    renderVisits();
+    if (storage.kind === 'memory') {
+      notices.show('storage', { tone: 'warning', text: 'This browser isn’t saving your cities (private browsing?). They’ll be gone when you close the tab.' });
+    }
+  }).catch((err) => {
+    console.warn('[store]', err);
+    notices.show('storage', { tone: 'danger', text: 'Your saved cities couldn’t be opened. Try reloading the page.' });
+  });
+  rm.map.once('load', openStore);
+
+  // ---------- names and labels: not needed for the first frame ----------
   const fetchMeta = () => loadMeta().then((meta) => {
     state.meta = meta;
     notices.hide('meta');
     rm.setLabels(meta);
-    if (state.selected) card.update(describeRegion(state.selected, { ...meta, visits: state.visits }));
+    if (state.selected) card.update(cardModel(state.selected));
   }).catch((err) => {
     console.warn('[meta]', err);
     if (notices.has('no-data')) return;
@@ -101,7 +159,7 @@ function start() {
   if (!navigator.onLine) showOffline();
 
   addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && card.open) { rm.select(null); state.selected = null; card.hide(); }
+    if (e.key === 'Escape' && card.open) closeCard();
   });
 
   // For troubleshooting from the browser console: regionTracker.map, regionTracker.state

@@ -15,7 +15,7 @@ const results = [];
 async function check(name, fn) {
   const t = Date.now();
   try { await fn(); results.push(['PASS', name, Date.now() - t]); }
-  catch (err) { results.push(['FAIL', name, Date.now() - t, err.message.split('\n')[0]]); }
+  catch (err) { results.push(['FAIL', name, Date.now() - t, err.message.split('\n').filter(Boolean).slice(0, 6).join('\n    ')]); }
 }
 
 await build({ logLevel: 'warn' });
@@ -102,15 +102,139 @@ const GERMANY = [10.4, 51.1];
     await page.mouse.click(sea.x, sea.y);
     assert.ok(await page.isHidden('#region-card'));
   });
-  await check('keyboard: skip link, Map/Globe toggle and the map are reachable with Tab', async () => {
+  await check('keyboard: skip link, search, Map/Globe toggle are reachable with Tab', async () => {
     await page.reload();
     await ready(page);
     const seen = [];
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 6; i++) {
       await page.keyboard.press('Tab');
       seen.push(await page.evaluate(() => document.activeElement?.textContent?.trim() || document.activeElement?.getAttribute('aria-label') || document.activeElement?.tagName));
     }
-    assert.deepEqual(seen.slice(0, 4), ['Skip to map', 'Map', 'Globe', 'World map of regions. Arrow keys pan, plus and minus zoom.'], seen.join(' | '));
+    assert.deepEqual(seen.slice(0, 4), ['Skip to map', 'INPUT', 'Map', 'Globe'], seen.join(' | '));
+  });
+  await ctx.close();
+}
+
+// ---------- Phase 2: add a city ----------
+{
+  const { ctx, page } = await open({ colorScheme: 'light' });
+  const store = () => page.evaluate(() => window.regionTracker.state.store.visits.map((v) => `${v.name}|${v.regionId}`));
+  const regionState = (id, source = 'regions') => page.evaluate(([i, s]) => window.regionTracker.map.getFeatureState({ source: s, sourceLayer: s, id: i }), [id, source]);
+  const options = () => page.$$eval('.search__option', (els) => els.map((e) => e.innerText.replace(/\n/g, ' | ')));
+  const typeQuery = async (q) => {
+    await page.fill('#search-input', '');
+    await page.type('#search-input', q, { delay: 30 });
+    await page.waitForFunction((query) => document.querySelector('#search-results').dataset.query === query
+      && !document.querySelector('#search-results').hidden, q);
+  };
+  await page.goto(url);
+  await ready(page);
+  await page.waitForFunction(() => window.regionTracker.state.store);
+
+  await check('search: nothing at 1 character, suggestions from the 2nd', async () => {
+    await page.fill('#search-input', '');
+    await page.type('#search-input', 'p');
+    await page.waitForTimeout(300);
+    assert.ok(await page.isHidden('#search-results'));
+    await page.type('#search-input', 'a');
+    await page.waitForSelector('.search__option');
+  });
+  await check('search: "par" shows "Paris, Île-de-France, FR" first; suggestions < 100 ms', async () => {
+    await typeQuery('par');
+    assert.equal((await options())[0], 'Paris | Île-de-France, FR');
+    const ms = await page.evaluate(() => performance.getEntriesByName('rt:suggest').map((m) => m.duration));
+    const median = ms.sort((a, b) => a - b)[Math.floor(ms.length / 2)];
+    assert.ok(median < 100, `median ${median.toFixed(1)} ms over ${ms.length} keystrokes`);
+    await page.screenshot({ path: `${SHOTS}search-suggestions.png` });
+  });
+  await check('search: arrow keys move the highlight, Esc closes the list', async () => {
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowUp');
+    const dbg = await page.evaluate(() => ({ active: document.querySelector('#search-input').getAttribute('aria-activedescendant'),
+      focus: document.activeElement?.id, hidden: document.querySelector('#search-results').hidden, query: document.querySelector('#search-results').dataset.query }));
+    assert.equal(dbg.active, 'search-opt-0', JSON.stringify(dbg));
+    await page.keyboard.press('Escape');
+    assert.ok(await page.isHidden('#search-results'));
+    assert.equal(await page.inputValue('#search-input'), 'par');
+  });
+  await check('picking Paris: saved, dot, region filled, country outlined, camera flies there, "Added Paris · Undo"', async () => {
+    await typeQuery('par');
+    await page.keyboard.press('Enter');
+    await page.waitForSelector('#toast:not([hidden])');
+    assert.match(await page.textContent('#toast'), /Added Paris\s*Undo/);
+    assert.deepEqual(await store(), ['Paris|FR-IDF']);
+    assert.equal((await regionState('FR-IDF')).visited, true);
+    assert.equal((await regionState('FR', 'countries')).visited, true);
+    const dots = await page.evaluate(() => window.regionTracker.map.getSource('visited-cities')._data);
+    assert.equal(dots.features?.length ?? dots.geojson?.features?.length, 1);
+    await page.waitForFunction(() => !window.regionTracker.map.isMoving(), null, { timeout: 15_000 });
+    const c = await page.evaluate(() => window.regionTracker.map.getCenter());
+    assert.ok(Math.abs(c.lng - 2.35) < 0.5 && Math.abs(c.lat - 48.86) < 0.5, JSON.stringify(c));
+    assert.equal(await page.inputValue('#search-input'), '', 'input cleared, ready for the next city');
+    await page.screenshot({ path: `${SHOTS}added-paris.png` });
+  });
+  await check('adding Paris again does nothing except fly to it; the suggestion says "Visited"', async () => {
+    await typeQuery('paris');
+    assert.match((await options())[0], /Visited$/);
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => /already on your list/.test(document.querySelector('#toast').textContent));
+    assert.deepEqual(await store(), ['Paris|FR-IDF']);
+  });
+  await check('Undo removes the city; its region and country un-highlight', async () => {
+    await typeQuery('stockholm');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => /Added Stockholm/.test(document.querySelector('#toast').textContent));
+    assert.equal((await regionState('SE-AB')).visited, true);
+    await page.click('.toast__action');
+    await page.waitForFunction(() => /Removed Stockholm/.test(document.querySelector('#toast').textContent));
+    assert.deepEqual(await store(), ['Paris|FR-IDF']);
+    assert.equal((await regionState('SE-AB')).visited, false);
+    assert.equal((await regionState('SE', 'countries')).visited, false);
+  });
+  await check('region card lists the visited cities', async () => {
+    await metaLoaded(page);
+    await page.evaluate(() => window.regionTracker.map.jumpTo({ center: [2.6, 48.7], zoom: 6 }));
+    await page.waitForFunction(() => window.regionTracker.map.loaded());
+    const p = await pixelOf(page, [2.9, 48.6]);
+    await page.mouse.click(p.x, p.y);
+    await page.waitForSelector('#region-card:not([hidden])');
+    const text = await page.textContent('#region-card');
+    assert.match(text, /Visited · 1 city/);
+    assert.match(text, /Paris/);
+    await page.keyboard.press('Escape');
+  });
+  await check('your cities survive a reload', async () => {
+    await page.reload();
+    await ready(page);
+    await page.waitForFunction(() => window.regionTracker.state.store?.visits.length === 1);
+    assert.equal((await regionState('FR-IDF')).visited, true);
+  });
+  await check('a second open tab stays in sync', async () => {
+    const other = await ctx.newPage();
+    await other.goto(url);
+    await other.waitForFunction(() => window.regionTracker?.state.store?.visits.length === 1);
+    await typeQuery('goteborg');
+    await page.keyboard.press('Enter');
+    await other.waitForFunction(() => window.regionTracker.state.store.visits.some((v) => v.regionId === 'SE-O'), null, { timeout: 5000 });
+    await other.close();
+  });
+  await check('territories are shown by name ("Gaza Strip", not "XG")', async () => {
+    await typeQuery('gaza');
+    const first = (await options())[0];
+    assert.match(first, /Gaza Strip/);
+    assert.doesNotMatch(first, /\bXG\b/);
+    await page.keyboard.press('Escape');
+  });
+  await check('no matches -> polite message', async () => {
+    await typeQuery('qqqxz');
+    assert.match(await page.textContent('#search-results'), /No places found for “qqqxz”/);
+  });
+  await check('search while offline -> polite message, not a crash', async () => {
+    await ctx.setOffline(true);
+    await typeQuery('zuri');   // a shard not loaded yet
+    assert.match(await page.textContent('#search-results'), /offline/);
+    await ctx.setOffline(false);
   });
   await ctx.close();
 }
@@ -150,6 +274,25 @@ const GERMANY = [10.4, 51.1];
     assert.ok(Math.abs(box.bottom - vh) < 2 && box.left === 0, JSON.stringify(box));
     assert.ok(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'no horizontal scroll');
     await page.screenshot({ path: `${SHOTS}phone-card.png` });
+  });
+  await check('phone: search and add a city', async () => {
+    await page.keyboard.press('Escape');
+    await page.tap('#search-input');
+    await page.type('#search-input', 'tokyo', { delay: 30 });
+    await page.waitForSelector('.search__option');
+    await page.screenshot({ path: `${SHOTS}phone-search.png` });
+    await page.tap('.search__option');
+    await page.waitForFunction(() => /Added Tokyo/.test(document.querySelector('#toast').textContent));
+    await page.waitForFunction(() => !window.regionTracker.map.isMoving(), null, { timeout: 15_000 });
+    await page.screenshot({ path: `${SHOTS}phone-added.png` });
+    // Nothing in the top bar may be cut off, and the toast must not cover the credits.
+    const vw = page.viewportSize().width;
+    for (const sel of ['.brand', '#search', '#projection-toggle']) {
+      const r = await page.$eval(sel, (e) => e.getBoundingClientRect().toJSON());
+      assert.ok(r.left >= 0 && r.right <= vw, `${sel} is cut off: ${JSON.stringify(r)}`);
+    }
+    const [t, a] = await Promise.all(['#toast', '.maplibregl-ctrl-attrib'].map((sel) => page.$eval(sel, (e) => e.getBoundingClientRect().toJSON())));
+    assert.ok(t.bottom <= a.top, `toast overlaps credits: toast ${t.bottom}, credits ${a.top}`);
   });
   await ctx.close();
 }
@@ -196,44 +339,9 @@ const GERMANY = [10.4, 51.1];
   await ctx.close();
 }
 
-// ---------- speed: mid-range phone on 4G ----------
-// Budget (CLAUDE.md): first map frame < 2 s on a mid-range phone on 4G. Our definition (DECISIONS D24):
-// "typical 4G" = 9 Mbit/s down, 1.5 up, 60 ms latency, CPU 4x slower than this machine.
-// The stricter Lighthouse "slow 4G" (1.6 Mbit/s, 150 ms) is measured and reported, not enforced.
-const PROFILES = {
-  'typical 4G': { latency: 60, down: 9e6, up: 1.5e6, budget: 2000, runs: 3 },
-  'slow 4G (Lighthouse)': { latency: 150, down: 1.6e6, up: 750e3, budget: null, runs: 1 },
-};
-const median = (xs) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
-const speed = {};
-for (const [name, p] of Object.entries(PROFILES)) {
-  await check(`first map frame, mid-range phone, ${name}${p.budget ? ` (median of ${p.runs} < ${p.budget} ms)` : ''}`, async () => {
-    const runs = [];
-    let kb = 0;
-    for (let i = 0; i < p.runs; i++) {
-      const { ctx, page } = await open({ ...devices['Moto G4'] });
-      const cdp = await ctx.newCDPSession(page);
-      await cdp.send('Network.emulateNetworkConditions', { offline: false, latency: p.latency, downloadThroughput: p.down / 8, uploadThroughput: p.up / 8 });
-      await cdp.send('Emulation.setCPUThrottlingRate', { rate: 4 });
-      await page.goto(url);
-      await ready(page);
-      const r = await page.evaluate(() => ({
-        firstFrame: Math.round(performance.getEntriesByName('rt:map-loaded')[0].startTime),
-        kb: Math.round(performance.getEntriesByType('resource').reduce((s, r) => s + (r.transferSize || 0), 0) / 1024),
-      }));
-      runs.push(r.firstFrame);
-      kb = r.kb;
-      await ctx.close();
-    }
-    speed[name] = { firstFrame: median(runs), runs, kb };
-    if (p.budget) assert.ok(speed[name].firstFrame < p.budget, `median ${speed[name].firstFrame} ms (runs ${runs.join(', ')})`);
-  });
-}
-
 await browser.close();
 await new Promise((r) => server.httpServer.close(r));
 
 for (const [status, name, ms, err] of results) console.log(`${status === 'PASS' ? '✔' : '✘'} ${name} (${ms} ms)${err ? `\n    ${err}` : ''}`);
-for (const [name, v] of Object.entries(speed)) console.log(`Speed, ${name}: first map frame ${v.firstFrame} ms (runs: ${v.runs.join(', ')} ms), ${v.kb} KB transferred`);
 console.log(`\n${results.filter((r) => r[0] === 'PASS').length}/${results.length} passed · screenshots in tests/e2e/screenshots/`);
 process.exit(results.some((r) => r[0] === 'FAIL') ? 1 : 0);

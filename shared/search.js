@@ -106,3 +106,21 @@ export function createSearch({ manifest, loadShard, cacheSize = 64 }) {
     },
   };
 }
+
+/**
+ * Look up one indexed city by id (and its name, which tells us which shard to read).
+ * Used to re-check saved cities when a new data version ships (regions can change).
+ * Returns a suggestion object, or null if the city is no longer in the index.
+ */
+export function createCityLookup({ manifest, loadShard }) {
+  return async function findCity(cityId, name) {
+    const q = normalize(name);
+    if (!q) return null;
+    const prefix = shardPrefixFor(q, manifest);
+    let shard;
+    try { shard = await loadShard(shardFileName(prefix)); } catch (e) { if (e?.notFound) return null; throw e; }
+    const id = Number(String(cityId).replace(/^gn:/, ''));
+    const ci = shard.c.findIndex((c) => c[0] === id);
+    return ci < 0 ? null : toSuggestion(shard, ci, null);
+  };
+}

@@ -150,3 +150,15 @@ describe('search over the built index', { skip: !indexBuilt && 'index not built 
     }
   });
 });
+
+describe('city lookup by id (for re-tagging)', { skip: !indexBuilt && 'index not built' }, () => {
+  test('finds Paris, Gothenburg and Tokyo by id + name', async () => {
+    const { createCityLookup } = await import('../shared/search.js');
+    const manifest = await readJson(join(SEARCH_DIR, 'manifest.json'));
+    const find = createCityLookup({ manifest, loadShard: loadShardFromDisk });
+    assert.equal((await find('gn:2988507', 'Paris')).regionId, 'FR-IDF');
+    assert.equal((await find('gn:2711537', 'Gothenburg')).regionId, 'SE-O');
+    assert.equal((await find('gn:1850147', 'Tokyo')).regionId, 'JP-13');
+    assert.equal(await find('gn:999999999', 'Paris'), null);
+  });
+});

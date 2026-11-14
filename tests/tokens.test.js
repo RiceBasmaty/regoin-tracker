@@ -10,10 +10,17 @@ const block = (selectorStart) => {
   const body = css.slice(css.indexOf('{', i) + 1, css.indexOf('}', i));
   return Object.fromEntries([...body.matchAll(/--([\w-]+):\s*([^;]+);/g)].map((m) => [m[1], m[2].trim()]));
 };
-const light = block(':root {');
+const lightRaw = block(':root {');
 const darkOnly = block(':root[data-theme="dark"]');
 const darkMedia = block(':root:not([data-theme="light"])');
-const dark = { ...light, ...darkOnly };
+// Resolve var(--palette-x) references, as the browser does.
+const resolve = (tokens) => Object.fromEntries(Object.entries(tokens).map(([k, v]) => {
+  let out = v;
+  for (let i = 0; i < 5 && /var\(--/.test(out); i++) out = out.replace(/var\(--([\w-]+)\)/g, (_, n) => tokens[n] ?? lightRaw[n]);
+  return [k, out];
+}));
+const light = resolve(lightRaw);
+const dark = resolve({ ...lightRaw, ...darkOnly });
 
 function rgb(hex) {
   const h = hex.replace('#', '');
@@ -35,6 +42,8 @@ const PAIRS = [
   ['color-warning-text', 'color-warning-bg', 4.5], ['color-danger-text', 'color-danger-bg', 4.5],
   ['map-label-strong', 'map-land', 4.5], ['map-label', 'map-land', 4.5],
   ['map-country-line', 'map-land', 1.8],           // decorative borders: visible, not text
+  ['color-toast-text', 'color-toast-bg', 4.5], ['color-toast-action', 'color-toast-bg', 4.5],
+  ['map-city-dot', 'map-land', 3],                 // city dots are UI marks (3:1)
 ];
 
 for (const [name, theme] of [['light', light], ['dark', dark]]) {
@@ -56,4 +65,19 @@ test('every map token used by the app exists in both themes', async () => {
     assert.ok(light[`map-${t}`], `light --map-${t}`);
     assert.ok(darkOnly[`map-${t}`], `dark --map-${t}`);
   }
+});
+
+test('roles use the palette (no raw hex outside the palette)', () => {
+  for (const [name, tokens] of [['light', lightRaw], ['dark', darkOnly]]) {
+    for (const [k, v] of Object.entries(tokens)) {
+      if (k.startsWith('palette-')) continue;
+      assert.doesNotMatch(v, /#[0-9a-f]{3,8}\b/i, `${name} --${k} should reference a --palette-* colour`);
+    }
+  }
+});
+
+test('components use roles only (no palette names or hex colours in app.css)', () => {
+  const app = readFileSync(new URL('../app/src/styles/app.css', import.meta.url), 'utf8');
+  assert.doesNotMatch(app, /--palette-/);
+  assert.doesNotMatch(app, /#[0-9a-f]{3,8}\b/i);
 });

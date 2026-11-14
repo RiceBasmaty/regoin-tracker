@@ -9,6 +9,8 @@ import { buildStyle, themedPaint, sky, labelFeatures } from './style.js';
 import { ATTRIBUTION, GLYPHS_URL, INITIAL_CENTER, initialZoom, dataUrl, DATA_VERSION } from '../config.js';
 
 const REGION = { source: 'regions', sourceLayer: 'regions' };
+const COUNTRY = { source: 'countries', sourceLayer: 'countries' };
+const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let protocolAdded = false;
 
 export function webglSupported() {
@@ -95,20 +97,43 @@ export function createRegionMap({ container, tokens, projection, onSelect, onHov
     onError?.({ kind, error: e.error });
   });
 
-  // Visited regions (Phase 2 calls this with the derived region ids).
-  let visited = new Set();
-  function setVisited(ids) {
+  // Visited regions/countries are feature-state (no re-styling). Calls made before the
+  // style has loaded are remembered and applied on 'load'.
+  const visitedState = new Map([[REGION, new Set()], [COUNTRY, new Set()]]);
+  // Our own "ready" flag: map.isStyleLoaded() is briefly false while tiles load (e.g. mid-flight),
+  // which must not divert updates into a queue that is only drained once.
+  let styleReady = false;
+  let pending = null;
+  function applyVisited(target, ids) {
+    const prev = visitedState.get(target);
     const next = new Set(ids);
-    for (const id of visited) if (!next.has(id)) map.setFeatureState({ ...REGION, id }, { visited: false });
-    for (const id of next) if (!visited.has(id)) map.setFeatureState({ ...REGION, id }, { visited: true });
-    visited = next;
+    for (const id of prev) if (!next.has(id)) map.setFeatureState({ ...target, id }, { visited: false });
+    for (const id of next) if (!prev.has(id)) map.setFeatureState({ ...target, id }, { visited: true });
+    visitedState.set(target, next);
   }
+  function setVisited({ regions, countries, cities }) {
+    if (!styleReady) { pending = { regions, countries, cities }; return; }
+    applyVisited(REGION, regions);
+    applyVisited(COUNTRY, countries);
+    map.getSource('visited-cities')?.setData({
+      type: 'FeatureCollection',
+      features: cities.map((v) => ({ type: 'Feature', properties: { id: v.cityId, name: v.name, regionId: v.regionId },
+                                     geometry: { type: 'Point', coordinates: [v.lon, v.lat] } })),
+    });
+  }
+  map.once('load', () => { styleReady = true; if (pending) { const p = pending; pending = null; setVisited(p); } });
 
   return {
     map,
     select,
     setVisited,
     setProjection(type) { map.setProjection({ type }); },
+    /** Fly to a city: close enough to see its region, never zooming out if already closer. */
+    flyTo({ lon, lat }) {
+      const zoom = Math.max(map.getZoom(), 5.5);
+      if (reducedMotion()) map.jumpTo({ center: [lon, lat], zoom });
+      else map.flyTo({ center: [lon, lat], zoom, speed: 1.4, curve: 1.5, essential: false });
+    },
     setTheme(t) {
       for (const [layer, props] of Object.entries(themedPaint(t))) {
         for (const [k, v] of Object.entries(props)) map.setPaintProperty(layer, k, v);

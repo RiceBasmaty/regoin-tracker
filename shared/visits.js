@@ -54,3 +54,24 @@ export function stats(visits, countriesMeta) {
   const un = perCountry.filter((c) => c.isUnMember).length;
   return { cities: visits.length, regions: regions.size, countries: un, territories: perCountry.length - un, perCountry };
 }
+
+/**
+ * Re-check saved cities against a new data version (borders and region keys can change).
+ * `findCity(cityId, name)` returns the city's current {regionId, countryIso, lat, lon} or null.
+ * Cities missing from the new index keep their old values (never silently deleted).
+ * Returns { visits, changed: [{cityId, from, to}], missing: [cityId] }.
+ */
+export async function retagVisits(visits, findCity) {
+  const changed = [];
+  const missing = [];
+  const out = [];
+  for (const v of visits) {
+    const now = await findCity(v.cityId, v.name);
+    if (!now) { missing.push(v.cityId); out.push(v); continue; }
+    if (now.regionId !== v.regionId || now.countryIso !== v.countryIso) {
+      changed.push({ cityId: v.cityId, from: v.regionId, to: now.regionId });
+      out.push({ ...v, regionId: now.regionId, countryIso: now.countryIso });
+    } else out.push(v);
+  }
+  return { visits: out, changed, missing };
+}
