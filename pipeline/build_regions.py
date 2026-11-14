@@ -153,9 +153,11 @@ def main():
         gdf.to_parquet(C.BUILD / f"{name}.parquet")
         b = gdf.geometry.bounds.round(4)
         lp = shapely.point_on_surface(gdf.geometry.values)
+        area_km2 = (gdf.to_crs(EQUAL_AREA).area / 1e6).round(1)
         meta = {}
         for i, r in gdf.iterrows():
             rec = {"name": r["name"], "local": r["name_local"] if r["name_local"] != r["name"] else None,
+                   "area": float(area_km2[i]),   # land area, km² (label priority, future stats)
                    "bbox": [b.minx[i], b.miny[i], b.maxx[i], b.maxy[i]],
                    "label": [round(shapely.get_x(lp[i]), 4), round(shapely.get_y(lp[i]), 4)]}
             if name == "regions":

@@ -34,6 +34,9 @@ def main():
                "--detect-shared-borders",          # shared edges simplify identically
                "--no-tiny-polygon-reduction",      # never drop a small region (it might be visited)
                "--simplification=4",
+               # Zoomed-out tiles use a coarser grid (2^10 instead of 2^12 units per tile): invisible at
+               # that scale, but the world-view tiles get ~2x smaller, which matters for the first frame.
+               "--low-detail=10", "--full-detail=12",
                "--maximum-tile-bytes=750000",
                "--attribution", "© OpenStreetMap contributors, Overture Maps Foundation (ODbL)",
                "--name", f"Region Tracker {name} {C.DATA_VERSION}",

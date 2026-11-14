@@ -3,7 +3,9 @@
 Log the cities you've visited; each one fills in its region and country on a world map (flat or globe).
 Product brief and rules: [`CLAUDE.md`](CLAUDE.md). Why things are built the way they are: [`DECISIONS.md`](DECISIONS.md).
 
-**Status:** Phase 0, the data pipeline, is done. There's no UI yet.
+**Status:**
+- Phase 0 (data pipeline): done.
+- Phase 1 (map shell): done. You can open the map, switch between flat and globe, hover over and click regions, and see dark mode, the phone layout and error messages.
 
 ## What Phase 0 produces
 
@@ -23,7 +25,27 @@ The shared browser/Node code lives in `shared/`:
 - `search.js` turns a typed query into ranked suggestions such as `Paris, Île-de-France, FR`.
 - `visits.js` handles the visited-cities list and derives visited regions and countries from it, plus stats.
 
-## Run it
+## Run the app (Phase 1)
+
+The app needs the pipeline output in `dist/data/` (build it once with `pipeline/run_all.sh`, below).
+
+```bash
+npm install          # once
+npm run dev          # http://localhost:5173 , live reload while editing
+npm run build        # production build into dist/app/
+npm run preview      # serve the production build at http://localhost:4173
+npm run test:e2e     # real-browser checks + speed budget; screenshots in tests/e2e/screenshots/
+```
+
+In the browser console, `regionTracker.map` and `regionTracker.state` help with troubleshooting. Load timing appears as `rt:map-loaded` and `rt:map-ready` in DevTools → Performance.
+
+Where things are:
+- **Look and feel:** every colour, size and spacing value lives in `app/src/styles/tokens.css`. The map reads its colours from there too.
+- **Map layers:** `app/src/map/style.js`.
+- **Card text:** `app/src/ui/region-model.js`.
+- **Data location:** `app/src/config.js` (set `VITE_DATA_BASE_URL` for a CDN).
+
+## Run the data pipeline
 
 Requirements: Linux or macOS, Python 3.11+, Node 22+, about 6 GB of free disk, and internet access to
 `overturemaps-us-west-2.s3.amazonaws.com`, `download.geonames.org`, `conda.anaconda.org` and PyPI.
@@ -46,7 +68,7 @@ Run single steps from `pipeline/` with `../.venv/bin/python <step>.py`, in this 
 Tests only:
 
 ```bash
-npm test               # search ranking, normaliser, derived-region logic (Node)
+npm test               # search, normaliser, derived regions, map style, card text, colour contrast (Node)
 npm run test:pipeline  # data checks: Paris→FR-IDF etc., coverage, shard sizes, tiles (Python)
 ```
 
@@ -66,10 +88,11 @@ npm run demo:search -- paris goteborg moskva "new y" stockholm
 ## Layout
 
 ```
+app/        the web app (Vite root): index.html, src/ (map, ui, styles/tokens.css), public/fonts
 pipeline/   Python build steps, config (all pinned versions in config.py), tests
 shared/     JS modules used by the app and the tests (no dependencies)
 data/       hand-maintained override tables (documented rows only)
-tests/      Node tests
+tests/      Node unit tests; tests/e2e/ real-browser checks
 build/      intermediate files + reports (git-ignored, rebuilt)
 dist/       publishable output (git-ignored, rebuilt)
 ```

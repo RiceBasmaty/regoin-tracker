@@ -1,0 +1,166 @@
+/*
+ * DESIGN TOKENS: the single place for colours, type, spacing, radii, shadows and motion.
+ * The map reads its colours from the --map-* tokens too (see src/map/tokens.js),
+ * so changing a value here restyles both the interface and the map.
+ *
+ * Theme: light by default; dark follows the device setting unless the page sets
+ * data-theme="light" | "dark" on <html>.
+ */
+:root {
+  color-scheme: light;
+
+  /* Type */
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+  --font-size-xs: 0.75rem;   /* 12px */
+  --font-size-sm: 0.8125rem; /* 13px */
+  --font-size-md: 0.9375rem; /* 15px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.375rem;  /* 22px */
+  --font-weight-regular: 400;
+  --font-weight-medium: 550;
+  --font-weight-bold: 650;
+  --line-height-tight: 1.25;
+  --line-height-normal: 1.5;
+  --letter-spacing-caps: 0.06em;
+
+  /* Spacing (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* Shape */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+
+  /* Layout */
+  --card-width: 360px;
+  --control-height: 40px;
+  --gutter: 16px;
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-normal: 220ms;
+  --easing: cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* Interface colours (all text pairs meet WCAG 2.1 AA, see tests/tokens.test.js) */
+  --color-bg: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-surface-raised: rgba(255, 255, 255, 0.92);
+  --color-text: #1b2430;
+  --color-text-muted: #5a6573;
+  --color-border: #e1e5ea;
+  --color-accent: #1f7a6d;          /* calm teal */
+  --color-accent-text: #ffffff;
+  --color-accent-soft: #e3f2ef;
+  --color-focus: #2563eb;
+  --color-warning-bg: #fff6e0;
+  --color-warning-text: #6b4a00;
+  --color-danger-bg: #fdeceb;
+  --color-danger-text: #8a1f17;
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06), 0 8px 24px rgba(16, 24, 40, 0.10);
+  --shadow-control: 0 1px 2px rgba(16, 24, 40, 0.08), 0 2px 8px rgba(16, 24, 40, 0.06);
+  --backdrop-blur: 12px;
+
+  /* Map colours */
+  --map-water: #dbe6ee;
+  --map-space: #f4f6f8;             /* around the globe */
+  --map-atmosphere: #e9f0f5;
+  --map-land: #fbfbf8;
+  --map-region-line: #d3d8de;
+  --map-country-line: #9aa4af;
+  --map-hover-fill: #1f7a6d;
+  --map-hover-opacity: 0.10;
+  --map-selected-fill: #1f7a6d;
+  --map-selected-opacity: 0.18;
+  --map-selected-line: #1f7a6d;
+  --map-visited-fill: #1f7a6d;      /* Phase 2 */
+  --map-visited-opacity: 0.42;
+  --map-label: #5a6573;
+  --map-label-strong: #2d3743;
+  --map-label-halo: #fbfbf8;
+}
+
+/* Dark theme: same names, different values. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg: #0e141b;
+  --color-surface: #161e27;
+  --color-surface-raised: rgba(22, 30, 39, 0.92);
+  --color-text: #e8edf2;
+  --color-text-muted: #a3afbd;
+  --color-border: #2a3541;
+  --color-accent: #4fbfae;
+  --color-accent-text: #07201c;
+  --color-accent-soft: #15302c;
+  --color-focus: #7aa7ff;
+  --color-warning-bg: #3a2e10;
+  --color-warning-text: #ffdf9a;
+  --color-danger-bg: #3d1714;
+  --color-danger-text: #ffb4ab;
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-control: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  --map-water: #0b131b;
+  --map-space: #0e141b;
+  --map-atmosphere: #1a2a38;
+  --map-land: #222d39;
+  --map-region-line: #334354;
+  --map-country-line: #5a6b7d;
+  --map-hover-fill: #4fbfae;
+  --map-hover-opacity: 0.14;
+  --map-selected-fill: #4fbfae;
+  --map-selected-opacity: 0.22;
+  --map-selected-line: #4fbfae;
+  --map-visited-fill: #4fbfae;
+  --map-visited-opacity: 0.45;
+  --map-label: #93a0ae;
+  --map-label-strong: #c9d2dc;
+  --map-label-halo: #222d39;
+}
+
+/* Follow the device setting unless a theme was chosen explicitly.
+   Keep in sync with the block above (tests/tokens.test.js checks they are identical). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-bg: #0e141b;
+    --color-surface: #161e27;
+    --color-surface-raised: rgba(22, 30, 39, 0.92);
+    --color-text: #e8edf2;
+    --color-text-muted: #a3afbd;
+    --color-border: #2a3541;
+    --color-accent: #4fbfae;
+    --color-accent-text: #07201c;
+    --color-accent-soft: #15302c;
+    --color-focus: #7aa7ff;
+    --color-warning-bg: #3a2e10;
+    --color-warning-text: #ffdf9a;
+    --color-danger-bg: #3d1714;
+    --color-danger-text: #ffb4ab;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.45);
+    --shadow-control: 0 1px 2px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+
+    --map-water: #0b131b;
+    --map-space: #0e141b;
+    --map-atmosphere: #1a2a38;
+    --map-land: #222d39;
+    --map-region-line: #334354;
+    --map-country-line: #5a6b7d;
+    --map-hover-fill: #4fbfae;
+    --map-hover-opacity: 0.14;
+    --map-selected-fill: #4fbfae;
+    --map-selected-opacity: 0.22;
+    --map-selected-line: #4fbfae;
+    --map-visited-fill: #4fbfae;
+    --map-visited-opacity: 0.45;
+    --map-label: #93a0ae;
+    --map-label-strong: #c9d2dc;
+    --map-label-halo: #222d39;
+  }
+}

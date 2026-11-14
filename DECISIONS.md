@@ -87,6 +87,51 @@ Newest first within each phase. Format: decision, reason, alternatives considere
 - **Guard against noise:** a 2-character key is indexed only if it's a city's main name or written in a non-Latin script. 2-letter Latin alternates are mostly abbreviations or old forms (Chongqing was matching "Pa"). Names with no language tag (often old romanisations like "P'an-yü") now weigh 0.1 instead of 0.3.
 - **Pseudo-codes:** territories with Overture's `X?` codes show their name in suggestions (`Gaza, Gaza Governorate, Gaza Strip`; `Pristina, District of Prishtina, Kosovo`), never the code. When the region and territory names are the same, the name is shown once.
 
+## Phase 1: map shell (2026-11-14)
+
+### D18. Plain JavaScript + Vite; MapLibre 6 and PMTiles; versions pinned
+- **Decision:** No UI framework. The app is small ES modules in `app/src/`, built with Vite 8.3.5. Map: MapLibre GL JS 6.16.0 and pmtiles 4.5.0. All versions are pinned exactly and were at least two weeks old when chosen, so they've had time to get bug-fixed.
+- **Reason:** The smallest bundle and the fewest moving parts to keep updated for years. The whole app is ~300 KB compressed, and almost all of that is MapLibre itself.
+- **Alternatives:** React/Svelte (more to update, little benefit for a map plus a few panels).
+- **Gotcha recorded:** MapLibre 6 finds its background "worker" script at runtime, which bundlers can't see. We import it explicitly (`?url`) and call `setWorkerUrl`. A build step also adds a preload hint so it downloads in parallel with the main script.
+
+### D19. Our own minimal basemap, no third-party map service
+- **Decision:** The background colour is the sea, our `countries` tiles are the land, and our region and country lines sit on top. Country labels (and region labels from zoom 4.5) come from the metadata JSON. Label fonts are Noto Sans glyphs we host ourselves (from `smp-noto-glyphs`, MIT; font under OFL). Only the Latin, Greek and Cyrillic ranges are shipped (~750 KB on disk, and only the ranges a label needs are fetched). Chinese, Japanese and Korean labels use the device's fonts.
+- **Reason:** No outside dependency can go down, rate-limit us or start charging. It's the calm, minimal look the brief asks for, and it costs nothing at any traffic level.
+- **Alternatives:** OpenFreeMap or Protomaps basemaps (more detail than we need, and an outside dependency). They remain an option for street-level detail later.
+- **Licence check:** a glyph generator without a stated licence (`maplibre-font-maker-node`) was rejected.
+
+### D20. One design-tokens file drives the UI and the map
+- **Decision:** `app/src/styles/tokens.css` holds every colour, type size, spacing value, radius, shadow and the timing of animations, including `--map-*` colours. The map style reads them at runtime (`readMapTokens`), and `style.js` contains no colours (a test enforces this). Dark theme follows the device setting, or `data-theme` on `<html>`.
+- **Guard:** `tests/tokens.test.js` checks WCAG 2.1 AA contrast for every text/background pair in both themes, and that the two copies of the dark theme are identical.
+
+### D21. A region "card" rather than a map-anchored popup
+- **Decision:** Clicking a region highlights it and opens a card. On desktop it floats top-left; on phones it's a bottom sheet. It shows the region name, the local name when it differs, the country, a "Territory" tag for non-UN places, visited status and the visited cities. Hovering on desktop shows a small name tooltip. Esc, the close button or a click on the sea closes the card.
+- **Reason:** An anchored popup covers the map exactly where you clicked, gets cramped with a list of cities, and is awkward on phones. A card has room and stays readable.
+
+### D22. Globe by default, remembered per device; no rotation or tilt
+- **Decision:** The first view is the globe, sized to fill ~85% of the screen. The Map/Globe choice is saved in the browser (per device; user data stays in IndexedDB later). Rotation and tilt are off, so the map stays calm and north-up.
+
+### D23. Errors are visible and polite
+- Tiles fail → "Some map data didn't load. [Try again]".
+- Offline → "You're offline…", which clears itself when the connection returns.
+- Names fail → "Region names couldn't load. [Try again]".
+- No WebGL → a plain explanation instead of a blank page.
+- Cancelled tile requests (normal while the map moves) are deliberately ignored.
+
+### D24. Speed budget: how we measure it, and where we stand
+- **Definition:** "Mid-range phone on 4G" = 4× slower CPU, 9 Mbit/s down, 1.5 Mbit/s up, 60 ms latency. The e2e test enforces first map frame < 2 s with this profile. The stricter Lighthouse "slow 4G" (1.6 Mbit/s, 150 ms) is measured and reported, not enforced.
+- **Today (headless Chromium with software graphics, so pessimistic):** typical 4G ≈ **1.9 s** (median of 3; single runs vary 1.8–2.1 s) ✅, a thin margin. Slow 4G ≈ 4.3 s: about 600 KB must arrive at 1.6 Mbit/s, and each PMTiles lookup costs a full round trip.
+- **What we did:** coarser geometry for zoomed-out tiles (`--low-detail=10`; world tile 138 → 73 KB), worker preload, and labels and names loaded after the first frame.
+- **Planned for Phase 4:** serve tiles as plain cached URLs from Cloudflare's edge (a small Worker reading the PMTiles file in R2, the standard setup). That removes the header → directory → tile round trips, plus a ~0.5 s gap where a busy phone decodes the PMTiles directory. Expected gain: ~0.6 s on typical 4G, more on slow networks. Until then the margin is thin, so the e2e check uses the median of 3 runs.
+
+### D25. Land area added to region and country metadata
+- `area` (km²) is in `regions.v2026-10.json` and `countries.v2026-10.json`. Labels use it, so big countries win label space when zoomed out (scattered island groups no longer crowd the globe). It's also ready for "area visited" stats later.
+
+### Known gaps, scheduled
+- Selecting a region by keyboard alone isn't possible yet. Arrow keys, + and − move the map, and Phase 2's search is the keyboard path to a place. Full keyboard and screen-reader review is in Phase 3.
+- Security headers (CSP: MapLibre needs `worker-src` for its module worker), cache headers and CDN compression come in Phase 4.
+
 ## Answered product questions (2026-11-14)
 
 1. Disputed borders: keep Overture's neutral view (D8).

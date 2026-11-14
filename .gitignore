@@ -9,3 +9,4 @@ node_modules/
 pipeline/cache/
 build/
 dist/
+tests/e2e/screenshots/

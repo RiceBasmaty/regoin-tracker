@@ -2,10 +2,24 @@
   "name": "region-tracker",
   "private": true,
   "type": "module",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "test": "node --test \"tests/*.test.js\"",
     "test:pipeline": ".venv/bin/python -m pytest -q pipeline/tests",
-    "demo:search": "node tests/demo-search.js"
+    "demo:search": "node tests/demo-search.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test:e2e": "node tests/e2e/map.e2e.js"
+  },
+  "dependencies": {
+    "maplibre-gl": "6.16.0",
+    "pmtiles": "4.5.0"
+  },
+  "devDependencies": {
+    "sirv": "3.0.2",
+    "vite": "8.3.5"
   }
 }
