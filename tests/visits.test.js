@@ -35,12 +35,22 @@ describe('visits', () => {
     visits = removeVisit(visits, lyon.cityId);
     assert.equal(deriveVisited(visits).countries.size, 0);
   });
+  test('only UN member states count as countries; territories keep their regions', () => {
+    const sanJuan = toVisit({ cityId: 'gn:4568127', name: 'San Juan', lat: 18.47, lon: -66.1, countryIso: 'PR', regionId: 'PR-X1A2B3C' }, 't');
+    const meta = { FR: { name: 'France', regions: 13, un: true }, PR: { name: 'Puerto Rico', regions: 78, un: false } };
+    const s = stats([paris, sanJuan], meta);
+    assert.equal(s.countries, 1);
+    assert.equal(s.territories, 1);
+    assert.equal(s.regions, 2);
+    assert.deepEqual(s.perCountry.map((c) => [c.countryIso, c.isUnMember]), [['FR', true], ['PR', false]]);
+  });
   test('stats: % of regions per country', () => {
-    const meta = { FR: { name: 'France', regions: 13 }, SE: { name: 'Sweden', regions: 21 } };
+    const meta = { FR: { name: 'France', regions: 13, un: true }, SE: { name: 'Sweden', regions: 21, un: true } };
     const s = stats([paris, versailles, lyon, stockholm], meta);
     assert.equal(s.cities, 4);
     assert.equal(s.regions, 3);
     assert.equal(s.countries, 2);
+    assert.equal(s.territories, 0);
     assert.deepEqual(s.perCountry.map((c) => [c.countryIso, c.visitedRegions, c.totalRegions, c.percent]),
       [['FR', 2, 13, 15.4], ['SE', 1, 21, 4.8]]);
   });

@@ -29,6 +29,7 @@ BUILD = ROOT / "build"                       # intermediate files (not published
 DIST = ROOT / "dist" / "data" / f"v{DATA_VERSION}"   # files to upload to R2
 OVERRIDES = ROOT / "data" / "region-overrides.csv"
 CITY_OVERRIDES = ROOT / "data" / "city-overrides.csv"
+UN_MEMBERS = ROOT / "data" / "un-member-states.txt"
 TIPPECANOE = ROOT / ".tools" / "env" / "bin" / "tippecanoe"
 
 # ---- Tunables --------------------------------------------------------------
@@ -38,9 +39,11 @@ SHARD_MAX_ENTRIES = 600          # a search shard with more keys than this is sp
 SHARD_MAX_PREFIX = 12            # ...but never deeper than 12 letters
 HEAD_CITIES = 40                 # cities kept in a "head" shard (query == split prefix); must be >= MAX_SUGGESTIONS
 MAX_SUGGESTIONS = 8
+MIN_CHARS = 2                    # suggestions start at this many (normalised) characters; 2 so 東京 / "Ub" work
 # Ranking: score = population x SCORE_EXACT (query equals the whole name) x KEY_WEIGHTS[kind of name matched].
-#   kinds: 0 main/English name, 1 local or untagged alternate, 2 foreign-language name, 3 match starts at a later word
+#   kinds: 0 main/English name, 1 local-language alternate, 2 foreign-language name, 3 match starts at a later word,
+#          4 alternate without a language tag (variants, old romanisations)
 # Examples: "paris" -> Paris FR (2.1M) before Paris TX (25k); "bath" -> Bath GB (exact, 101k x 20)
 # before Bathinda (285k); "york" -> New York (8.8M x 20 x 0.2 = 35M) before York GB (156k x 20 = 3.1M).
 SCORE_EXACT = 20
-KEY_WEIGHTS = [1.0, 0.3, 0.1, 0.2]
+KEY_WEIGHTS = [1.0, 0.3, 0.1, 0.2, 0.1]

@@ -37,7 +37,8 @@ ALL_LANGS_MIN_POP = 100_000
 MAJOR_LANGS = {"ar", "bn", "cs", "da", "de", "el", "es", "fa", "fi", "fr", "he", "hi", "hu", "id", "it", "ja", "ko",
                "ms", "nl", "no", "pl", "pt", "ro", "ru", "sv", "th", "tr", "uk", "vi", "zh"}
 # Key classes; their ranking weight is C.KEY_WEIGHTS[class] (shipped in the manifest).
-MAIN, LOCAL_ALT, FOREIGN_ALT, LATER_WORD = 0, 1, 2, 3
+MAIN, LOCAL_ALT, FOREIGN_ALT, LATER_WORD, UNTAGGED_ALT = 0, 1, 2, 3, 4
+NON_ISO = re.compile(r"^X[A-Z]$")   # ISO 3166-1 "user-assigned" range used by Overture for disputed areas
 NUMBERED = re.compile(r"^([0-9]+|[ivxlc]+)$")   # '15', 'xi' (Roman numerals)
 MAX_KEYS_PER_CITY = 40
 EARTH_KM = 6371.0088
@@ -198,7 +199,8 @@ def build_keys(cities, alts):
     """Return {geonameid: [(key, class, original spelling)]}.
 
     MAIN        city name, ASCII name, English / preferred names
-    LOCAL_ALT   other names in the country's languages or with no language tag
+    LOCAL_ALT   other names in the country's languages
+    UNTAGGED_ALT names with no language tag (variants, old romanisations)
     FOREIGN_ALT names in other major languages (cities >= ALL_LANGS_MIN_POP only)
     LATER_WORD  a main name starting from its 2nd/3rd... word ("york" -> New York)
     """
@@ -214,8 +216,10 @@ def build_keys(cities, alts):
         lang = lang.split("-")[0]
         if lang == "en" or (pref == "1" and lang in langs.get(cc_of[gid], ())):
             cls = MAIN
-        elif lang == "" or lang in langs.get(cc_of[gid], ()):
+        elif lang in langs.get(cc_of[gid], ()):
             cls = LOCAL_ALT
+        elif lang == "":
+            cls = UNTAGGED_ALT     # often old romanisations ("P'an-yü"): searchable, ranked low
         elif lang in MAJOR_LANGS and pop[gid] >= ALL_LANGS_MIN_POP:
             cls = FOREIGN_ALT
         else:
@@ -231,7 +235,11 @@ def build_keys(cities, alts):
             spelling.setdefault(normalize(raw), raw)
         for cls, raw in sorted(lst, key=lambda x: x[0]):
             k = normalize(raw)
-            if len(k) < 3 or k in seen:
+            if len(k) < C.MIN_CHARS or k in seen:
+                continue
+            # A 2-character key must be the city's main name or non-Latin script (東京);
+            # 2-letter Latin alternates are abbreviations or old forms ("Pa" for Chongqing).
+            if len(k) < 3 and cls != MAIN and k.isascii():
                 continue
             seen.add(k)
             out.append((k, cls, spelling[k]))
@@ -257,7 +265,7 @@ def city_score(pop, exact, cls):
     return max(pop, 1) * (C.SCORE_EXACT if exact else 1) * C.KEY_WEIGHTS[cls]
 
 
-def write_shards(cities, keys, region_meta, report):
+def write_shards(cities, keys, region_meta, country_meta, report):
     """Shards are keyed by the first 2 letters of a search key. A shard with more than
     SHARD_MAX_ENTRIES entries is split by one more letter (recursively). For a split
     prefix P (3+ letters) we also write a "head" shard used when the query is exactly P:
@@ -288,6 +296,9 @@ def write_shards(cities, keys, region_meta, report):
             "p": prefix,
             # regions used in this shard: [key, display name]
             "r": [[r, region_meta[r]["name"]] for r in rids],
+            # display names for territories without a real ISO country code (Overture "X?" codes,
+            # e.g. XG -> "Gaza Strip"): suggestions show the name, never the code
+            "n": {cc: country_meta[cc]["name"] for cc in sorted({city.at[g, "cc"] for g in gids}) if NON_ISO.match(cc)},
             # cities: [geonameid, name, regionIndex, country, lat, lon, population]
             "c": [[int(g), name[g], ridx[rid_of[g]], city.at[g, "cc"], round(float(city.at[g, "lat"]), 5),
                    round(float(city.at[g, "lon"]), 5), int(pop[g])] for g in gids],
@@ -304,7 +315,7 @@ def write_shards(cities, keys, region_meta, report):
             emit(prefix, lst)
             return
         split.add(prefix)
-        if n >= 3:   # head shard for a query that is exactly `prefix`
+        if n >= C.MIN_CHARS:   # head shard for a query that is exactly `prefix`
             exact = [e for e in lst if e[0] == prefix]
             best = {}
             for k, t, g, _ in lst:
@@ -321,7 +332,7 @@ def write_shards(cities, keys, region_meta, report):
 
     for p2, lst in groups.items():
         build(p2, lst)
-    manifest = {"v": C.DATA_VERSION, "minChars": 3, "split": sorted(split), "maxSuggestions": C.MAX_SUGGESTIONS,
+    manifest = {"v": C.DATA_VERSION, "minChars": C.MIN_CHARS, "split": sorted(split), "maxSuggestions": C.MAX_SUGGESTIONS,
                 "score": {"exact": C.SCORE_EXACT, "weights": C.KEY_WEIGHTS}}
     (out_dir / "manifest.json").write_text(json.dumps(manifest, ensure_ascii=False, separators=(",", ":")))
     sizes = np.array(sizes)
@@ -339,7 +350,8 @@ def main():
     alts = load_alt_names(cities)
     keys = build_keys(cities, alts)
     region_meta = json.loads((C.BUILD / "regions.meta.json").read_text("utf-8"))
-    write_shards(cities, keys, region_meta, report)
+    country_meta = json.loads((C.BUILD / "countries.meta.json").read_text("utf-8"))
+    write_shards(cities, keys, region_meta, country_meta, report)
     report["cities_out"] = len(cities)
     report["search_keys"] = sum(len(v) for v in keys.values())
     cities.to_parquet(C.BUILD / "cities.parquet")

@@ -16,7 +16,7 @@ describe('normalize', () => {
 });
 
 describe('ranking (synthetic shard, no data needed)', () => {
-  const manifest = { minChars: 3, split: [], maxSuggestions: 8, score: { exact: 20, weights: [1, 0.3, 0.1, 0.2] } };
+  const manifest = { minChars: 2, split: [], maxSuggestions: 8, score: { exact: 20, weights: [1, 0.3, 0.1, 0.2] } };
   // cities: [id, name, regionIndex, cc, lat, lon, pop]
   const shard = {
     p: 'pa',
@@ -62,9 +62,19 @@ describe('search over the built index', { skip: !indexBuilt && 'index not built 
   });
   const top = async (q) => (await search(q))[0];
 
-  test('nothing before the 3rd character', async () => {
-    assert.deepEqual(await search('pa'), []);
+  test('nothing before the 2nd character', async () => {
+    assert.deepEqual(await search('p'), []);
     assert.deepEqual(await search('P '), []);
+    assert.ok((await search('pa')).length > 0);
+  });
+  test('2-character names are findable (東京 = Tokyo)', async () => {
+    assert.equal((await top('東京')).regionId, 'JP-13');
+  });
+  test('territories without an ISO code are shown by name, not code', async () => {
+    const gaza = (await search('gaza')).find((s) => s.countryIso === 'XG');
+    assert.ok(gaza, 'a city in the Gaza Strip');
+    assert.match(gaza.label, /Gaza Strip$/);
+    assert.doesNotMatch(gaza.label, /XG/);
   });
   test('Paris, Île-de-France, FR comes before Paris, Texas, US', async () => {
     const labels = (await search('paris')).map((s) => s.label);
@@ -116,7 +126,7 @@ describe('search over the built index', { skip: !indexBuilt && 'index not built 
     // For every split prefix P (3+ letters) we ship a reduced "head" shard. Rebuild the
     // full candidate list from all deeper shards and check the ranking is identical.
     const shards = await allShards();
-    const heads = shards.filter((s) => manifest.split.includes(s.p) && Array.from(s.p).length >= 3);
+    const heads = shards.filter((s) => manifest.split.includes(s.p) && Array.from(s.p).length >= manifest.minChars);
     assert.ok(heads.length > 50);
     for (const head of heads) {
       const merged = { r: [], c: [], k: [] };

@@ -38,9 +38,9 @@ Newest first within each phase. Format: decision, reason, alternatives considere
 - **Decision:** At build time each city is placed in the region polygon containing it. A city just off the coastline polygon (ports, islands, river mouths) snaps to the nearest region of the country it lies in, within 25 km, or within 150 km of the same country as a last resort. The city's country is then the region's country, not GeoNames' country.
 - **Reason:** It meets data rule 4 (no geometry in the browser), and cities, regions and countries can never disagree. Result: 99.65% of cities fall inside a polygon, 567 snap, none are left without a region. The 463 cities whose country differs from GeoNames are listed in `build/cities.report.json`. Most are in disputed areas (see D8) or sit within a few hundred metres of a border.
 
-### D8. Disputed territories: Overture's default view for now ⚠️ *needs Dmitry*
+### D8. Disputed territories: Overture's neutral view ✅ *confirmed by Dmitry 2026-11-14*
 - **Fact:** CLAUDE.md asks for the de facto (who controls it) view. This Overture release ships **no perspective data** (`perspectives` is empty on every division). Its default view puts disputed areas in separate pseudo-countries with `X?` codes: Kosovo `XK`, West Bank `XW`, Gaza `XG`, Golan `XH`, the Kurils `XU`/`XI`/`XO`/`XA`, Abyei, Bir Tawil and others. Crimea and Sevastopol are inside Ukraine (`UA-43`, `UA-40`).
-- **Decision for Phase 0:** ship Overture's view unchanged and record it.
+- **Decision:** ship Overture's neutral view unchanged. Dmitry confirmed this on 2026-11-14. It replaces the "de facto" default in CLAUDE.md.
 - **Reason:** A true de facto view would mean maintaining our own list of territorial claims, a political and legal call that's the product owner's to make. Region overrides (`data/region-overrides.csv`, `set_country`) make it a data change later, not a code change.
 
 ### D9. Two override tables, each row with a reason
@@ -55,8 +55,8 @@ Newest first within each phase. Format: decision, reason, alternatives considere
   - names in ~30 widely used languages, for cities over 100,000 people only;
   - a name starting from its 2nd word, so `york` finds New York.
 
-  At most 40 names per city. Suggestions start at 3 characters (CLAUDE.md).
-- **Ranking:** score = population × 20 if the query equals the whole name × a weight for the kind of name matched (main name 1, local name 0.3, foreign language 0.1, later word 0.2). The constants live in `pipeline/config.py` and ship in the search manifest, so tuning them doesn't need an app release.
+  At most 40 names per city. Suggestions start at **2** characters (D17).
+- **Ranking:** score = population × 20 if the query equals the whole name × a weight for the kind of name matched (main name 1, local-language name 0.3, foreign language 0.1, later word 0.2, name without a language tag 0.1). The constants live in `pipeline/config.py` and ship in the search manifest, so tuning them doesn't need an app release.
 - **Why:** pure population ranking made "san" return Shanghai (via its Lithuanian name) and Sydney (via its Latin name). These weights keep "Paris, Île-de-France, FR" first, "Bath, England" before Bathinda, and Santiago and São Paulo at the top of "san".
 - **Display:** `City, Region, CC`. When the user matched an alternate name, the suggestion also carries it (`Gothenburg … [matched "Göteborg"]`), so Phase 2 can show it.
 
@@ -78,9 +78,18 @@ Newest first within each phase. Format: decision, reason, alternatives considere
 ### D15. Cloud build environment
 - I created a personal cloud environment (`regoin-tracker`) that also allows `download.geonames.org`, because the default one blocked it. No secrets are involved.
 
-## Open product questions (for Dmitry)
+### D16. Countries are UN member states; everything else is a territory ✅ *Dmitry, 2026-11-14*
+- **Decision:** "Countries visited" counts only the 193 UN member states (`data/un-member-states.txt`, flagged `un: true` in `countries.v2026-10.json`). Dependencies (Puerto Rico, Réunion, Greenland…), the observer state Vatican City and disputed territories (Kosovo, Gaza Strip…) keep their own regions and appear in the progress list, but count as territories, not countries. They are not merged into France, the USA or Denmark.
+- **Effect:** `stats()` returns `countries` (UN members) and `territories` separately. The build stops if any UN member is missing from the boundary data.
 
-1. **Disputed borders (D8):** keep Overture's neutral view, or should I maintain a de facto list (e.g. Crimea → Russia, the Kurils → Russia, Golan → Israel)?
-2. **Pseudo-country codes in suggestions:** Gaza shows as `Gaza, Gaza Strip, XG`. Show the territory name instead of the code where no ISO code exists?
-3. **Overseas territories:** Réunion, Guadeloupe, Puerto Rico, Greenland and others are their own "countries" (they have their own ISO codes, as in Overture and GeoNames). Should they also count toward France, the USA and Denmark in the stats?
-4. **2-character names:** the 3-character rule means `東京` (Tokyo in Japanese) and towns like `Ub` can't be found by those spellings. Allow 2 characters for Chinese and Japanese script?
+### D17. Suggestions from the 2nd character; names instead of pseudo-codes ✅ *Dmitry, 2026-11-14*
+- **Decision:** suggestions start at 2 characters, so `東京` (Tokyo) and `Ub` are findable. The CLAUDE.md flow was updated to match.
+- **Guard against noise:** a 2-character key is indexed only if it's a city's main name or written in a non-Latin script. 2-letter Latin alternates are mostly abbreviations or old forms (Chongqing was matching "Pa"). Names with no language tag (often old romanisations like "P'an-yü") now weigh 0.1 instead of 0.3.
+- **Pseudo-codes:** territories with Overture's `X?` codes show their name in suggestions (`Gaza, Gaza Governorate, Gaza Strip`; `Pristina, District of Prishtina, Kosovo`), never the code. When the region and territory names are the same, the name is shown once.
+
+## Answered product questions (2026-11-14)
+
+1. Disputed borders: keep Overture's neutral view (D8).
+2. Pseudo-codes: show names (D17).
+3. Overseas territories: separate, with their own regions; only UN member states count as countries (D16).
+4. Search starts at 2 characters (D17).

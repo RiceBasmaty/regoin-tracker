@@ -36,17 +36,21 @@ export function deriveVisited(visits) {
 }
 
 /**
- * Progress per country: visited regions / all regions in that country.
- * countriesMeta = contents of countries.v<VERSION>.json ({CC: {name, regions: <count>, ...}}).
+ * Progress per country/territory: visited regions / all its regions.
+ * countriesMeta = contents of countries.v<VERSION>.json ({CC: {name, regions: <count>, un: bool}}).
+ * Only UN member states count toward `countries`; dependencies (Puerto Rico, Réunion...),
+ * observer states and disputed territories count toward `territories` (decision D16).
  */
 export function stats(visits, countriesMeta) {
   const { regions, countries } = deriveVisited(visits);
   const perCountry = [...countries.entries()]
     .map(([cc, rids]) => {
       const total = countriesMeta[cc]?.regions ?? rids.size;
-      return { countryIso: cc, name: countriesMeta[cc]?.name ?? cc, visitedRegions: rids.size, totalRegions: total,
+      return { countryIso: cc, name: countriesMeta[cc]?.name ?? cc, isUnMember: countriesMeta[cc]?.un === true,
+               visitedRegions: rids.size, totalRegions: total,
                percent: total ? Math.round((rids.size / total) * 1000) / 10 : 0 };
     })
     .sort((a, b) => b.percent - a.percent || a.name.localeCompare(b.name));
-  return { cities: visits.length, regions: regions.size, countries: countries.size, perCountry };
+  const un = perCountry.filter((c) => c.isUnMember).length;
+  return { cities: visits.length, regions: regions.size, countries: un, territories: perCountry.length - un, perCountry };
 }

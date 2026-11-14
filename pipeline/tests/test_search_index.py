@@ -21,7 +21,7 @@ def resolve(q, split):
 
 def test_manifest(manifest):
     assert manifest["v"] == C.DATA_VERSION
-    assert manifest["minChars"] == 3
+    assert manifest["minChars"] == C.MIN_CHARS == 2
     assert manifest["score"]["weights"] == C.KEY_WEIGHTS
     assert C.HEAD_CITIES >= manifest["maxSuggestions"]
 
@@ -41,8 +41,6 @@ def test_shards_are_sorted_prefixed_and_small(search_dir, manifest):
         assert all(k.startswith(d["p"]) for k in keys), f.name
         assert all(0 <= k[1] < len(d["c"]) for k in d["k"])
         assert all(0 <= c[2] < len(d["r"]) for c in d["c"])
-        if d["p"] in split:
-            assert len(d["p"]) >= 3, "2-letter split prefixes must not have a head shard"
     # Budget: < 100 KB uncompressed (~30 KB over the wire) keeps suggestions fast on 4G.
     assert biggest < 100_000, f"largest shard is {biggest/1e3:.0f} KB"
 
@@ -58,7 +56,7 @@ def test_every_city_is_findable_by_its_name(cities, search_dir, manifest):
     missing = []
     for gid, name in zip(cities.geonameid, cities.name):
         q = normalize(name)
-        if len(q) < 3:
+        if len(q) < C.MIN_CHARS:
             continue
         d = load(resolve(q, split))
         ids = {d["c"][k[1]][0] for k in d["k"] if k[0] == q} if d else set()

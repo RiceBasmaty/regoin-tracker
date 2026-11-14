@@ -58,6 +58,9 @@ export function rankShard(shard, q, manifest) {
 function toSuggestion(shard, ci, spelling) {
   const [id, name, ri, cc, lat, lon, population] = shard.c[ci];
   const [regionId, regionName] = shard.r[ri];
+  // Territories without a real ISO code (XG, XK...) are shown by name, never by code.
+  const countryLabel = shard.n?.[cc] ?? cc;
+  const place = regionName === countryLabel ? regionName : `${regionName}, ${countryLabel}`;
   return {
     cityId: `gn:${id}`,
     name,
@@ -67,7 +70,7 @@ function toSuggestion(shard, ci, spelling) {
     lat,
     lon,
     population,
-    label: `${name}, ${regionName}, ${cc}`,
+    label: `${name}, ${place}`,
     // The spelling the user matched, when it is not the main name (e.g. "Göteborg" for Gothenburg).
     matchedName: spelling && spelling !== name ? spelling : null,
   };

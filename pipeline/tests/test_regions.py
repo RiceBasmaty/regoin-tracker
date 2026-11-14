@@ -89,6 +89,13 @@ def test_region_counts_for_known_countries(countries_meta):
     assert got == expected
 
 
+def test_un_member_states(countries_meta):
+    un = [cc for cc, m in countries_meta.items() if m["un"]]
+    assert len(un) == 193
+    assert countries_meta["FR"]["un"] and not countries_meta["PR"]["un"] and not countries_meta["XK"]["un"]
+    assert not countries_meta["VA"]["un"]   # observer state, not a member
+
+
 def test_region_names_present(regions_meta):
     assert all(m.get("name") for m in regions_meta.values())
     assert regions_meta["FR-IDF"]["name"] == "Île-de-France"

@@ -14,7 +14,7 @@ A web app where a user logs the cities they've visited. Each city fills in its r
 ## Core user flow (must match exactly)
 
 1. User types a city name in the search bar.
-2. **From the 3rd character**, suggestions appear, formatted `City, Region, CC`, for example `Paris, Île-de-France, FR`.
+2. **From the 2nd character** (decided 2026-11-14 so short names like `東京` work), suggestions appear, formatted `City, Region, CC`, for example `Paris, Île-de-France, FR`. Territories without an ISO country code show their name instead of a code (`Gaza, Gaza Governorate, Gaza Strip`).
 3. User clicks a suggestion. The app:
    - saves the city to the user's **visited cities** list,
    - marks the city with a dot on the map,

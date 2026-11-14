@@ -163,8 +163,14 @@ def main():
             meta[r[key]] = {k: v for k, v in rec.items() if v is not None}
         if name == "countries":
             counts = regions.cc.value_counts()
+            un = {l.strip() for l in C.UN_MEMBERS.read_text().splitlines() if l.strip() and not l.startswith("#")}
+            missing = un - set(meta)
+            if missing:
+                sys.exit(f"UN member states missing from Overture countries: {sorted(missing)}")
             for cc in meta:
                 meta[cc]["regions"] = int(counts.get(cc, 0))
+                # Only UN member states count as "countries"; everything else is a territory.
+                meta[cc]["un"] = cc in un
         (C.BUILD / f"{name}.meta.json").write_text(json.dumps(meta, ensure_ascii=False, separators=(",", ":")))
         # GeoJSON lines for tippecanoe: keep tile attributes minimal (id + country).
         with open(C.BUILD / f"{name}.geojsonl", "w", encoding="utf-8") as out:
