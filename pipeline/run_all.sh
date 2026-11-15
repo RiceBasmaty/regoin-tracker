@@ -17,6 +17,7 @@ step "3/7 regions";     $PY build_regions.py
 step "4/7 cities";      $PY build_cities.py > /dev/null
                         echo "report: build/cities.report.json"
                         $PY build_places.py
+                        $PY build_water.py
 step "5/7 map tiles";   $PY build_tiles.py
 step "6/7 publish";     $PY publish.py
 cd "$ROOT"

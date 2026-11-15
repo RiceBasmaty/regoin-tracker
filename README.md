@@ -7,6 +7,7 @@ Product brief and rules: [`CLAUDE.md`](CLAUDE.md). The plan for the remaining ph
 - Phase 0 (data pipeline): done.
 - Phase 1 (map shell): done. Flat map and globe, hover, a region card when you click, dark mode, phone layout, error messages.
 - Phase 2 (add a city): done. Search, save cities on the device, city dots, visited regions and countries, fly-to, "Added · Undo".
+- Phase 3.1 (map readability): done. Text hierarchy by size and weight, fewer dots, lakes and major rivers, France's 22 historical regions, and a "Map display" panel (city dots / names).
 - Phase 3 (map-first adding + better regions): done. Cities on the map, tap a city to add it, quick-add and region search in the region card, remove from the card, UK counties, and statistical regions for Slovenia, North Macedonia and Malta, plus Serbian districts.
 
 ## What Phase 0 produces
@@ -17,7 +18,8 @@ Running the pipeline creates `dist/data/v<version>/`, where the version is set i
 |---|---|---|
 | `regions.v….pmtiles` | Map tiles for ~3,800 regions (French régions, Swedish län, US states, English counties…); each shape carries only its key (`FR-IDF`) and country | ~44 MB (a phone loads only the few tiles it shows) |
 | `countries.v….pmtiles` | Map tiles for 272 countries/territories | ~7 MB |
-| `places.v….pmtiles` | All 162k cities as map dots, big cities first as you zoom in | ~25 MB |
+| `places.v….pmtiles` | All 162k cities as map dots with a tier (capital, big, medium, town, village) for the text hierarchy | ~14 MB |
+| `water.v….pmtiles` | Lakes, major rivers and lake names (Natural Earth) | ~2 MB |
 | `regions.v….json` | For every region: name, local name, country, land area, bounding box, label point | ~0.5 MB |
 | `countries.v….json` | For every country: name, number of regions, UN member or territory | small |
 | `places/<region>.json` | Every city of one region, largest first (region card: quick-add and search) | ~3,700 files, typically 0.5 KB |
@@ -68,7 +70,8 @@ npm run perf         # speed report: first map frame on an emulated mid-range ph
 In the browser console, `regionTracker.map` and `regionTracker.state` help with troubleshooting. Load timing appears as `rt:map-loaded` and `rt:map-ready` in DevTools → Performance.
 
 Where things are:
-- **Look and feel:** `app/src/styles/tokens.css`. Raw colours are in the *palette* section and their uses are in the *roles* section; to restyle, change the palette. The map reads its colours from there too.
+- **Map fonts:** `app/public/fonts/` (Noto Sans Regular, Medium and Bold), rebuilt by `pipeline/tools/build_fonts.py`.
+- **Look and feel:** `app/src/styles/tokens.css`. This includes the map's text sizes (`--map-text-*`) and fonts (`--map-font-*`). Raw colours are in the *palette* section and their uses are in the *roles* section; to restyle, change the palette. The map reads its colours from there too.
 - **Saved cities:** stored in the browser (IndexedDB) by `app/src/data/storage.js` and `visits-store.js`. To start fresh: DevTools → Application → Storage → Clear site data.
 - **Map layers:** `app/src/map/style.js`.
 - **Card text:** `app/src/ui/region-model.js`.

@@ -8,6 +8,7 @@ The plan approved by Dmitry on 2026-11-14. The details of each finished phase li
 | 1. Map shell | ✅ done |
 | 2. Add a city (search) | ✅ done |
 | 3. Map-first adding + better regions | ✅ done |
+| 3.1 Map readability (text hierarchy, lakes, France) | ✅ done |
 | 4. Progress and polish | next |
 | 5. Deploy and harden | planned |
 | 6. Accounts and sync | later |
@@ -44,6 +45,9 @@ Feedback: the map, not the search bar, should be the main way to add cities, and
 - **Remove (✕)** next to each visited city.
 
 **Not doing:** marking a region visited without a city (strong no from both of us). The city stays the only stored truth.
+
+## Phase 3.1: Map readability ✅ (2026-11-15; D41–D44)
+Text hierarchy by size and weight; fewer dots (big cities and your visited cities when zoomed out, villages only at the closest zoom); lakes and major rivers; France's 22 historical regions; "Map display" panel with City dots and Names switches.
 
 ## Phase 4: Progress and polish
 - **"My cities" panel:** search, sort, and delete with undo. It's mainly for reviewing now that adding happens on the map.

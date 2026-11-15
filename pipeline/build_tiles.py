@@ -26,6 +26,10 @@ LAYERS = {
     "countries": (8, POLYGON_FLAGS),
     # City points: each feature carries its own minzoom (build_places.py); keep every point.
     "places": (10, ["-r1", "--no-feature-limit"]),
+    # Lakes, rivers, lake names (build_water.py): three layers in one file.
+    "water": (8, ["-r1", "--no-feature-limit", "--simplification=4", "--low-detail=10", "--full-detail=12",
+                  "-L", "lakes:{build}/water-lakes.geojsonl", "-L", "rivers:{build}/water-rivers.geojsonl",
+                  "-L", "water_labels:{build}/water-labels.geojsonl"]),
 }
 
 
@@ -40,11 +44,12 @@ def main():
     for name, (maxzoom, flags) in LAYERS.items():
         dest = C.DIST / f"{name}.v{C.DATA_VERSION}.pmtiles"
         cmd = [str(C.TIPPECANOE), "-o", str(tmp / dest.name), "--force", "--quiet",
-               "-l", name, "-Z", "0", "-z", str(maxzoom),
+               *(["-l", name] if name != "water" else []), "-Z", "0", "-z", str(maxzoom),
                "--maximum-tile-bytes=750000",
                "--attribution", "© OpenStreetMap contributors, Overture Maps Foundation (ODbL)",
                "--name", f"Region Tracker {name} {C.DATA_VERSION}",
-               *flags, str(C.BUILD / f"{name}.geojsonl")]
+               *[f.replace("{build}", str(C.BUILD)) for f in flags],
+               *([str(C.BUILD / f"{name}.geojsonl")] if name != "water" else [])]
         subprocess.run(cmd, check=True)
         shutil.move(tmp / dest.name, dest)
         out[name] = {"file": dest.name, "mb": round(dest.stat().st_size / 1e6, 1), "maxzoom": maxzoom}

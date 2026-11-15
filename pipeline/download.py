@@ -113,6 +113,12 @@ def main():
         if refresh or broken or not dest.exists():
             fetch_whole(f"{C.GEONAMES_BASE}/{name}", dest)
         manifest["files"][f"geonames/{name}"] = {"source": f"{C.GEONAMES_BASE}/{name}", "bytes": dest.stat().st_size, "sha256": sha256(dest)}
+    for name in C.NATURAL_EARTH_FILES:
+        dest = C.NATURAL_EARTH_CACHE / name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        if not dest.exists() or not zip_ok(dest):
+            fetch_whole(f"{C.NATURAL_EARTH_BASE}/{name}", dest)
+        manifest["files"][f"naturalearth/{name}"] = {"source": f"{C.NATURAL_EARTH_BASE}/{name}", "bytes": dest.stat().st_size, "sha256": sha256(dest)}
     C.BUILD.mkdir(parents=True, exist_ok=True)
     (C.BUILD / "inputs.json").write_text(json.dumps(manifest, indent=2))
     print("inputs ready")

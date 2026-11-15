@@ -40,6 +40,10 @@ def test_big_cities_show_when_zoomed_out():
     import sys
     sys.path.insert(0, str(C.PIPELINE))
     from build_places import minzoom
+    from build_places import tier, CAPITAL, BIG, MEDIUM, TOWN, VILLAGE
     assert minzoom(10_000_000, "PPL") == 1
-    assert minzoom(2_000, "PPL") == 8
-    assert minzoom(200_000, "PPLC") == 3      # capitals one level earlier
+    assert minzoom(2_000, "PPL") == 10        # villages only at the closest zoom (D43)
+    assert minzoom(200_000, "PPLC") == 3      # every capital by zoom 3
+    assert minzoom(60_000, "PPL", is_centre=True) == 5   # region centres earlier than their size alone
+    assert [tier(9e6, "PPLC", False), tier(2e6, "PPL", False), tier(50_000, "PPLA", True),
+            tier(300_000, "PPL", False), tier(30_000, "PPL", False), tier(3_000, "PPL", False)] == [CAPITAL, BIG, BIG, MEDIUM, TOWN, VILLAGE]

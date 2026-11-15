@@ -5,7 +5,7 @@ import { Map as MapLibreMap, AttributionControl, NavigationControl, addProtocol,
 // importing it with ?url makes Vite ship the file (hashed, cacheable) and gives us its address.
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?url';
 import { Protocol } from 'pmtiles';
-import { buildStyle, themedPaint, sky, labelFeatures } from './style.js';
+import { buildStyle, themedPaint, sky, labelFeatures, LABEL_LAYERS, PLACE_LAYERS } from './style.js';
 import { ATTRIBUTION, GLYPHS_URL, INITIAL_CENTER, initialZoom, dataUrl, DATA_VERSION } from '../config.js';
 
 const REGION = { source: 'regions', sourceLayer: 'regions' };
@@ -23,7 +23,7 @@ export function webglSupported() {
   } catch { return false; }
 }
 
-export function createRegionMap({ container, tokens, projection, showPlaces = true, onSelect, onCityClick, onHover, onError }) {
+export function createRegionMap({ container, tokens, projection, showPlaces = true, showLabels = true, onSelect, onCityClick, onHover, onError }) {
   if (!protocolAdded) {
     setWorkerUrl(new URL(workerUrl, location.href).href);
     // metadata:false - the attribution is shown once by our own AttributionControl text.
@@ -34,11 +34,12 @@ export function createRegionMap({ container, tokens, projection, showPlaces = tr
     regions: `pmtiles://${new URL(dataUrl(`regions.v${DATA_VERSION}.pmtiles`), location.href).href}`,
     countries: `pmtiles://${new URL(dataUrl(`countries.v${DATA_VERSION}.pmtiles`), location.href).href}`,
     places: `pmtiles://${new URL(dataUrl(`places.v${DATA_VERSION}.pmtiles`), location.href).href}`,
+    water: `pmtiles://${new URL(dataUrl(`water.v${DATA_VERSION}.pmtiles`), location.href).href}`,
   };
   const map = new MapLibreMap({
     container,
     style: buildStyle({ tokens, regionsUrl: urls.regions, countriesUrl: urls.countries, placesUrl: urls.places,
-                        glyphs: GLYPHS_URL, projection, showPlaces }),
+                        waterUrl: urls.water, glyphs: GLYPHS_URL, projection, showPlaces, showLabels }),
     center: INITIAL_CENTER,
     zoom: initialZoom(container.clientWidth, container.clientHeight),
     minZoom: 0.5,
@@ -155,9 +156,11 @@ export function createRegionMap({ container, tokens, projection, showPlaces = tr
     setVisited,
     setProjection(type) { map.setProjection({ type }); },
     addControl(control, position = 'bottom-right') { map.addControl(control, position); },
-    /** Show or hide other cities' dots and names (your visited cities always stay). */
-    setPlacesVisible(on) {
-      for (const l of ['places-dots', 'places-labels']) if (map.getLayer(l)) map.setLayoutProperty(l, 'visibility', on ? 'visible' : 'none');
+    /** Map display switches: other cities' dots (your visited cities always stay) and all names. */
+    setDisplay({ places, labels }) {
+      const set = (l, on) => map.getLayer(l) && map.setLayoutProperty(l, 'visibility', on ? 'visible' : 'none');
+      for (const l of LABEL_LAYERS) set(l, labels);
+      for (const l of PLACE_LAYERS) set(l, places && (l === 'places-dots' || labels));
     },
     /** Fly to a city: close enough to see its region, never zooming out if already closer. */
     flyTo({ lon, lat }) {
@@ -177,7 +180,7 @@ export function createRegionMap({ container, tokens, projection, showPlaces = tr
     },
     /** Re-request map data after an error or when the connection comes back. */
     retry() {
-      for (const id of ['regions', 'countries', 'places']) map.getSource(id)?.setUrl(urls[id]);
+      for (const id of ['regions', 'countries', 'places', 'water']) map.getSource(id)?.setUrl(urls[id]);
     },
   };
 }

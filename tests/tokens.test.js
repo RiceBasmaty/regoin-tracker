@@ -44,6 +44,9 @@ const PAIRS = [
   ['map-country-line', 'map-land', 1.8],           // decorative borders: visible, not text
   ['color-toast-text', 'color-toast-bg', 4.5], ['color-toast-action', 'color-toast-bg', 4.5],
   ['map-city-dot', 'map-land', 3],                 // city dots are UI marks (3:1)
+  ['map-label-city', 'map-land', 4.5], ['map-label-region', 'map-land', 4.5], ['map-place-label', 'map-land', 4.5],
+  ['map-visited-label', 'map-land', 4.5], ['map-water-label', 'map-water', 4.5],
+  ['map-river', 'map-land', 1.25],                 // decorative line: just visible
 ];
 
 for (const [name, theme] of [['light', light], ['dark', dark]]) {
@@ -63,7 +66,8 @@ test('every map token used by the app exists in both themes', async () => {
   const { MAP_TOKENS } = await import('../app/src/map/tokens.js');
   for (const t of MAP_TOKENS) {
     assert.ok(light[`map-${t}`], `light --map-${t}`);
-    assert.ok(darkOnly[`map-${t}`], `dark --map-${t}`);
+    // fonts and text sizes are the same in both themes; colours must be defined for dark too
+    if (!/^(font|text)-/.test(t)) assert.ok(darkOnly[`map-${t}`], `dark --map-${t}`);
   }
 });
 

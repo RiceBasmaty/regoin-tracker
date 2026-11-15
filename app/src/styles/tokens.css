@@ -55,6 +55,10 @@
   --palette-red-800: #3d1714;
   --palette-red-900: #8a1f17;
   --palette-blue-300: #7aa7ff;
+  --palette-sea-300: #9cc0d8;
+  --palette-sea-400: #b7cfdf;      /* rivers on light land */
+  --palette-sea-700: #3f6a88;      /* water names */
+  --palette-sea-900: #1d3445;
   --palette-blue-600: #2563eb;
 
   /* ===== 2. ROLES (light theme) ===== */
@@ -149,6 +153,24 @@
   --map-label: var(--palette-slate-500);
   --map-label-strong: var(--palette-slate-700);
   --map-label-halo: var(--palette-paper);
+  --map-label-city: var(--palette-slate-900);     /* capitals, big and medium cities */
+  --map-label-region: var(--palette-slate-500);   /* regions: lighter, spaced, no dot */
+  --map-river: var(--palette-sea-400);
+  --map-water-label: var(--palette-sea-700);
+
+  /* Map text hierarchy (D43): size and weight only, no uppercase. Sizes in px at mid zoom;
+     the map scales them a little with zoom. Fonts are the glyph sets in app/public/fonts. */
+  --map-font-regular: Noto Sans Regular;
+  --map-font-medium: Noto Sans Medium;
+  --map-font-bold: Noto Sans Bold;
+  --map-text-country: 15;
+  --map-text-region: 12;
+  --map-text-capital: 14;
+  --map-text-big: 13.5;
+  --map-text-medium: 12.5;
+  --map-text-town: 11.5;
+  --map-text-village: 11;
+  --map-text-water: 11.5;
 }
 
 /* Dark theme: same role names, mapped to the dark end of the palette. */
@@ -199,6 +221,10 @@
   --map-label: var(--palette-night-400);
   --map-label-strong: var(--palette-night-200);
   --map-label-halo: var(--palette-night-850);
+  --map-label-city: var(--palette-night-100);
+  --map-label-region: var(--palette-night-400);
+  --map-river: var(--palette-night-1000);
+  --map-water-label: var(--palette-sea-300);
 }
 
 /* Follow the device setting unless a theme was chosen explicitly.
@@ -251,5 +277,9 @@
     --map-label: var(--palette-night-400);
     --map-label-strong: var(--palette-night-200);
     --map-label-halo: var(--palette-night-850);
+    --map-label-city: var(--palette-night-100);
+    --map-label-region: var(--palette-night-400);
+    --map-river: var(--palette-night-1000);
+    --map-water-label: var(--palette-sea-300);
   }
 }

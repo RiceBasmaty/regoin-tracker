@@ -1,0 +1,101 @@
+# France: the 22 historical regions (1982-2015) that people still relate to (Dmitry, 2026-11-15, D41),
+# built from the 96 departments + Métropole de Lyon (Overture 'county' units). Hand-written from the
+# official 1982 composition. Regions whose territory is unchanged today keep their current ISO code.
+match,region,local,key
+Bas-Rhin,Alsace,,
+Haut-Rhin,Alsace,,
+Dordogne,Aquitaine,,
+Gironde,Aquitaine,,
+Landes,Aquitaine,,
+Lot-et-Garonne,Aquitaine,,
+Pyrénées-Atlantiques,Aquitaine,,
+Allier,Auvergne,,
+Cantal,Auvergne,,
+Haute-Loire,Auvergne,,
+Puy-de-Dôme,Auvergne,,
+Côte-d'Or,Burgundy,Bourgogne,
+Nièvre,Burgundy,Bourgogne,
+Saône-et-Loire,Burgundy,Bourgogne,
+Yonne,Burgundy,Bourgogne,
+Côtes-d'Armor,Brittany,Bretagne,FR-BRE
+Finistère,Brittany,Bretagne,FR-BRE
+Ille-et-Vilaine,Brittany,Bretagne,FR-BRE
+Morbihan,Brittany,Bretagne,FR-BRE
+Cher,Centre-Val de Loire,,FR-CVL
+Eure-et-Loir,Centre-Val de Loire,,FR-CVL
+Indre,Centre-Val de Loire,,FR-CVL
+Indre-et-Loire,Centre-Val de Loire,,FR-CVL
+Loir-et-Cher,Centre-Val de Loire,,FR-CVL
+Loiret,Centre-Val de Loire,,FR-CVL
+Ardennes,Champagne-Ardenne,,
+Aube,Champagne-Ardenne,,
+Marne,Champagne-Ardenne,,
+Haute-Marne,Champagne-Ardenne,,
+Corse-du-Sud,Corsica,Corse,FR-20R
+Haute-Corse,Corsica,Corse,FR-20R
+Doubs,Franche-Comté,,
+Jura,Franche-Comté,,
+Haute-Saône,Franche-Comté,,
+Territoire-de-Belfort,Franche-Comté,,
+Paris,Île-de-France,,FR-IDF
+Seine-et-Marne,Île-de-France,,FR-IDF
+Yvelines,Île-de-France,,FR-IDF
+Essonne,Île-de-France,,FR-IDF
+Hauts-de-Seine,Île-de-France,,FR-IDF
+Seine-Saint-Denis,Île-de-France,,FR-IDF
+Val-de-Marne,Île-de-France,,FR-IDF
+Val-d'Oise,Île-de-France,,FR-IDF
+Aude,Languedoc-Roussillon,,
+Gard,Languedoc-Roussillon,,
+Hérault,Languedoc-Roussillon,,
+Lozère,Languedoc-Roussillon,,
+Pyrénées-Orientales,Languedoc-Roussillon,,
+Corrèze,Limousin,,
+Creuse,Limousin,,
+Haute-Vienne,Limousin,,
+Meurthe-et-Moselle,Lorraine,,
+Meuse,Lorraine,,
+Moselle,Lorraine,,
+Vosges,Lorraine,,
+Ariège,Midi-Pyrénées,,
+Aveyron,Midi-Pyrénées,,
+Haute-Garonne,Midi-Pyrénées,,
+Gers,Midi-Pyrénées,,
+Lot,Midi-Pyrénées,,
+Hautes-Pyrénées,Midi-Pyrénées,,
+Tarn,Midi-Pyrénées,,
+Tarn-et-Garonne,Midi-Pyrénées,,
+Nord,Nord-Pas-de-Calais,,
+Pas-de-Calais,Nord-Pas-de-Calais,,
+Calvados,Lower Normandy,Basse-Normandie,
+Manche,Lower Normandy,Basse-Normandie,
+Orne,Lower Normandy,Basse-Normandie,
+Eure,Upper Normandy,Haute-Normandie,
+Seine-Maritime,Upper Normandy,Haute-Normandie,
+Loire-Atlantique,Pays de la Loire,,FR-PDL
+Maine-et-Loire,Pays de la Loire,,FR-PDL
+Mayenne,Pays de la Loire,,FR-PDL
+Sarthe,Pays de la Loire,,FR-PDL
+Vendée,Pays de la Loire,,FR-PDL
+Aisne,Picardy,Picardie,
+Oise,Picardy,Picardie,
+Somme,Picardy,Picardie,
+Charente,Poitou-Charentes,,
+Charente-Maritime,Poitou-Charentes,,
+Deux-Sèvres,Poitou-Charentes,,
+Vienne,Poitou-Charentes,,
+Alpes-de-Haute-Provence,Provence-Alpes-Côte d'Azur,,FR-PAC
+Hautes-Alpes,Provence-Alpes-Côte d'Azur,,FR-PAC
+Alpes-Maritimes,Provence-Alpes-Côte d'Azur,,FR-PAC
+Bouches-du-Rhône,Provence-Alpes-Côte d'Azur,,FR-PAC
+Var,Provence-Alpes-Côte d'Azur,,FR-PAC
+Vaucluse,Provence-Alpes-Côte d'Azur,,FR-PAC
+Ain,Rhône-Alpes,,
+Ardèche,Rhône-Alpes,,
+Drôme,Rhône-Alpes,,
+Isère,Rhône-Alpes,,
+Loire,Rhône-Alpes,,
+Rhône,Rhône-Alpes,,
+Métropole de Lyon,Rhône-Alpes,,
+Savoie,Rhône-Alpes,,
+Haute-Savoie,Rhône-Alpes,,

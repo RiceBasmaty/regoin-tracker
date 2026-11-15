@@ -257,7 +257,7 @@ const GERMANY = [10.4, 51.1];
   const regionVisited = (id) => page.evaluate((i) => window.regionTracker.map.getFeatureState({ source: 'regions', sourceLayer: 'regions', id: i }).visited ?? false, id);
   const OXFORDSHIRE = 'GB-X383397';
   async function viewOxfordshire() {
-    await page.evaluate(() => window.regionTracker.map.jumpTo({ center: [-1.3, 51.85], zoom: 7.5 }));
+    await page.evaluate(() => window.regionTracker.map.jumpTo({ center: [-1.3, 51.85], zoom: 8.3 }));
     await page.waitForFunction(() => window.regionTracker.map.loaded() && !window.regionTracker.map.isMoving());
     await page.waitForTimeout(300);
   }
@@ -332,18 +332,51 @@ const GERMANY = [10.4, 51.1];
     await page.keyboard.press('Escape');
     assert.equal(await page.$('.city-popup'), null);
   });
-  await check('show/hide other cities: hides dots and names, keeps visited dots, remembered', async () => {
+  await check('Map display: "City dots" hides other cities (visited stay), "Names" hides all text; both remembered', async () => {
     const vis = (l) => page.evaluate((l) => window.regionTracker.map.getLayoutProperty(l, 'visibility') ?? 'visible', l);
-    await page.click('.places-toggle__button');
+    await page.click('.map-display__button');
+    await page.waitForSelector('#map-display-panel:not([hidden])');
+    await page.click('.map-display__row:has(input[data-key="places"])');
     assert.equal(await vis('places-dots'), 'none');
-    assert.equal(await vis('places-labels'), 'none');
+    assert.equal(await vis('places-labels-major'), 'none');
     assert.equal(await vis('city-dots'), 'visible');
-    assert.equal(await page.getAttribute('.places-toggle__button', 'aria-label'), 'Show other cities on the map');
+    assert.equal(await vis('region-labels'), 'visible');
+    await page.click('.map-display__row:has(input[data-key="labels"])');
+    for (const l of ['country-labels', 'region-labels', 'visited-labels', 'water-labels', 'river-labels']) assert.equal(await vis(l), 'none', l);
+    await page.screenshot({ path: `${SHOTS}map-display-clean.png` });
+    await page.keyboard.press('Escape');
+    assert.ok(await page.isHidden('#map-display-panel'));
     await page.reload();
     await ready(page);
     assert.equal(await vis('places-dots'), 'none');
-    await page.click('.places-toggle__button');
+    assert.equal(await vis('country-labels'), 'none');
+    await page.click('.map-display__button');
+    await page.click('.map-display__row:has(input[data-key="places"])');
+    await page.click('.map-display__row:has(input[data-key="labels"])');
     assert.equal(await vis('places-dots'), 'visible');
+    assert.equal(await vis('places-labels-minor'), 'visible');
+    assert.equal(await vis('country-labels'), 'visible');
+    await page.keyboard.press('Escape');
+  });
+  await check('lakes are drawn and named (Lake Sevan)', async () => {
+    await page.evaluate(() => window.regionTracker.map.jumpTo({ center: [45.3, 40.35], zoom: 7.5 }));
+    await page.waitForFunction(() => window.regionTracker.map.loaded() && window.regionTracker.map.areTilesLoaded());
+    await page.waitForTimeout(500);
+    const r = await page.evaluate(() => ({
+      lakes: window.regionTracker.map.queryRenderedFeatures({ layers: ['lakes'] }).length,
+      names: window.regionTracker.map.queryRenderedFeatures({ layers: ['water-labels'] }).map((f) => f.properties.name),
+    }));
+    assert.ok(r.lakes > 0);
+    assert.ok(r.names.includes('Lake Sevan'), r.names.join(', '));
+  });
+  await check('France uses its historical regions: Dijon is in Burgundy', async () => {
+    await page.evaluate(() => window.regionTracker.map.jumpTo({ center: [4.6, 47.2], zoom: 7 }));
+    await page.waitForFunction(() => window.regionTracker.map.loaded() && window.regionTracker.map.areTilesLoaded());
+    await clickRegion(page, [[4.3, 47.4], [4.0, 47.0], [4.8, 47.6], [3.6, 47.5]]);
+    await page.waitForSelector('#region-card:not([hidden])');
+    assert.equal(await page.textContent('#region-card .card__title'), 'Burgundy');
+    assert.equal(await page.textContent('#region-card .card__subtitle'), 'Bourgogne');
+    await page.keyboard.press('Escape');
   });
   await check('cities saved under an older data version move to their new region (London: England -> Greater London)', async () => {
     await page.evaluate(() => new Promise((resolve, reject) => {

@@ -1,8 +1,10 @@
-# Map label font
+# Map label fonts
 
-`Noto Sans Regular/*.pbf` are pre-rendered map glyphs (signed-distance-field PBF ranges) of
-**Noto Sans** (GoNotoKurrent build), taken from the npm package `smp-noto-glyphs@2.0.0` (MIT).
+`Noto Sans Regular/`, `Noto Sans Medium/` and `Noto Sans Bold/` hold pre-rendered map glyphs
+(signed-distance-field PBF ranges, MapLibre format) of **Noto Sans**.
 
-- Font licence: SIL Open Font License 1.1 — https://openfontlicense.org (Noto fonts © Google / The Noto Project Authors)
-- Only Latin, Latin Extended, Greek, Cyrillic and punctuation ranges are shipped. Chinese/Japanese/Korean
-  labels are drawn with the device's own fonts (MapLibre `localIdeographFontFamily`).
+- Font: Noto Sans from `@fontsource/noto-sans@5.3.0`, licensed under the SIL Open Font License 1.1
+  (https://openfontlicense.org). © The Noto Project Authors.
+- Built by `pipeline/tools/build_fonts.py` with fontTools (MIT) and `@kartore/glyphore@0.2.0` (MIT OR Apache-2.0).
+- Alphabets: Latin (incl. extended and Vietnamese), Greek, Cyrillic. Chinese/Japanese/Korean labels are drawn
+  with the device's own fonts (MapLibre `localIdeographFontFamily`).

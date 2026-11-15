@@ -9,7 +9,7 @@ import { createNotices } from './ui/notices.js';
 import { createToast } from './ui/toast.js';
 import { createSearchBox } from './ui/search-box.js';
 import { createProjectionToggle, savedProjection } from './ui/projection-toggle.js';
-import { PlacesToggleControl, savedPlacesVisible } from './ui/places-toggle.js';
+import { MapDisplayControl, savedDisplay } from './ui/map-display.js';
 import { createCityPopup } from './ui/city-popup.js';
 import { loadRegionPlaces } from './data/region-places.js';
 import { loadMeta } from './data/meta.js';
@@ -53,13 +53,14 @@ function start() {
   }
   const tooltip = $('#tooltip');
   const projection = savedProjection('globe');
-  const showPlaces = savedPlacesVisible();
+  const display = savedDisplay();
 
   const rm = createRegionMap({
     container: $('#map'),
     tokens: readMapTokens(),
     projection,
-    showPlaces,
+    showPlaces: display.places,
+    showLabels: display.labels,
     onCityClick(city) {
       tooltip.hidden = true;
       cityPopup.open(city);
@@ -91,7 +92,7 @@ function start() {
   });
 
   createProjectionToggle($('#projection-toggle'), { value: projection, onChange: (v) => rm.setProjection(v) });
-  rm.addControl(new PlacesToggleControl({ visible: showPlaces, onChange: (on) => { rm.setPlacesVisible(on); if (!on) cityPopup.close(); } }));
+  rm.addControl(new MapDisplayControl({ value: display, onChange: (v) => { rm.setDisplay(v); if (!v.places) cityPopup.close(); } }));
 
   // ---------- tap a city on the map: popup with Add / Remove (D35) ----------
   const regionOf = (rid) => state.meta?.regions?.[rid];

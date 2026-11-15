@@ -18,7 +18,7 @@ KNOWN = [
     (5856195, "Honolulu", "US-HI"), (4160812, "Key West", "US-FL"), (3164603, "Venice", "IT-34"),
     (3413829, "Reykjavík", "IS-1"),
     # next to a border
-    (2660646, "Geneva", "CH-GE"), (2661604, "Basel", "CH-BS"), (2973783, "Strasbourg", "FR-GES"),
+    (2660646, "Geneva", "CH-GE"), (2661604, "Basel", "CH-BS"),
     (4990729, "Detroit", "US-MI"), (5520993, "El Paso", "US-TX"),
     # countries without regions -> the whole country is one region keyed by its code
     (6691831, "Vatican City", "VA"),
@@ -44,6 +44,12 @@ GROUPED = [
     (785842, "Skopje", "MK-X890D0D", "Skopje Region"), (792578, "Bitola", "MK-X313FDD", "Pelagonia Region"),
     (2562305, "Valletta", "MT-X4BD54E", "Port Region"), (2562619, "Victoria", "MT-X6BD47D", "Gozo Region"),
     (792680, "Belgrade", "RS-00", "Belgrade"), (3194360, "Novi Sad", "RS-06", "South Bačka District"),
+    # France: 22 historical regions (D41); unchanged ones keep their current ISO code
+    (2973783, "Strasbourg", "FR-XAD2EA5", "Alsace"), (3021372, "Dijon", "FR-X16FE72", "Burgundy"),
+    (2982652, "Rouen", "FR-X3F3990", "Upper Normandy"), (3029241, "Caen", "FR-X6E2EE9", "Lower Normandy"),
+    (2996944, "Lyon", "FR-X58E765", "Rhône-Alpes"), (2998324, "Lille", "FR-X94BD86", "Nord-Pas-de-Calais"),
+    (2995469, "Marseille", "FR-PAC", "Provence-Alpes-Côte d'Azur"), (2983990, "Rennes", "FR-BRE", "Brittany"),
+    (3038334, "Ajaccio", "FR-20R", "Corsica"),
 ]
 
 
@@ -110,6 +116,7 @@ def test_region_counts_for_known_countries(countries_meta):
     # RS: 24 districts + Belgrade (Kosovo's districts are in Kosovo, D8).
     expected = {"FR": 13, "SE": 21, "DE": 16, "JP": 47, "IT": 20, "ES": 20,
                 "GB": 112, "SI": 12, "MK": 8, "MT": 6, "RS": 25}
+    expected["FR"] = 22   # historical regions (D41)
     got = {cc: countries_meta[cc]["regions"] for cc in expected}
     assert got == expected
 

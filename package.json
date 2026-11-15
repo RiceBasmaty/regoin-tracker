@@ -20,6 +20,7 @@
     "pmtiles": "4.5.0"
   },
   "devDependencies": {
+    "@kartore/glyphore": "0.2.0",
     "sirv": "3.0.2",
     "vite": "8.3.5"
   }

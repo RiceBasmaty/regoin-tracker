@@ -11,3 +11,4 @@ SI,region,SI.csv,"12 statistical regions instead of 212 municipalities (too fine
 MK,region,MK.csv,"8 statistical regions instead of 71 municipalities (too fine)"
 MT,region,MT.csv,"6 regions instead of 68 local councils (too fine)"
 RS,county,RS.csv,"24 districts + City of Belgrade instead of 2 regions (too coarse); Kosovo's districts are in Kosovo (neutral view, D8)"
+FR,county,FR.csv,"22 historical regions (Alsace, Burgundy, Upper Normandy...) instead of the 13 merged 2016 regions (Grand Est...): culturally meaningful (Dmitry, D41)"

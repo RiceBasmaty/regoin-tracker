@@ -16,6 +16,11 @@ OVERTURE_TYPES = ["division_area"]          # all we need for regions/countries
 
 GEONAMES_BASE = "https://download.geonames.org/export/dump"
 GEONAMES_FILES = ["cities1000.zip", "alternateNamesV2.zip", "countryInfo.txt"]
+
+# Natural Earth (public domain): lakes and rivers for orientation (D42). Downloaded once and
+# reused, like GeoNames; the SHA-256 in build/inputs.json identifies the exact files.
+NATURAL_EARTH_BASE = "https://naciscdn.org/naturalearth/10m/physical"
+NATURAL_EARTH_FILES = ["ne_10m_lakes.zip", "ne_10m_rivers_lake_centerlines.zip"]
 # GeoNames has no versioned releases; the download date + SHA-256 of each file
 # is written to build/manifest.json so any build can be traced to its inputs.
 
@@ -28,6 +33,7 @@ PIPELINE = ROOT / "pipeline"
 CACHE = PIPELINE / "cache"
 OVERTURE_CACHE = CACHE / "overture" / OVERTURE_RELEASE
 GEONAMES_CACHE = CACHE / "geonames"
+NATURAL_EARTH_CACHE = CACHE / "naturalearth"
 BUILD = ROOT / "build"                       # intermediate files (not published)
 DIST = ROOT / "dist" / "data" / f"v{DATA_VERSION}"   # files to upload to R2
 OVERRIDES = ROOT / "data" / "region-overrides.csv"

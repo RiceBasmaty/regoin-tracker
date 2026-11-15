@@ -38,7 +38,7 @@ Visited cities:
 ## Non-negotiable data rules
 
 1. **The city is the source of truth.** Store visits as cities (`cityId, name, lat, lon, countryIso, regionId, addedAt`). Visited regions and countries are always **derived** from the stored cities, never stored as independent truth.
-2. **Regions are OSM `admin_level = 4`**, sourced from Overture Maps *divisions*. If a country has no level-4 units, fall back to the nearest available level (3, then 5, then 6). Keep a small override table (`data/region-overrides.*`) for exceptions, and document each one. Some countries use a different level by decision (`data/region-levels.csv`, DECISIONS D36): UK ceremonial counties / council areas, Slovenia, North Macedonia and Malta statistical regions, Serbia districts.
+2. **Regions are OSM `admin_level = 4`**, sourced from Overture Maps *divisions*. If a country has no level-4 units, fall back to the nearest available level (3, then 5, then 6). Keep a small override table (`data/region-overrides.*`) for exceptions, and document each one. Some countries use a different level by decision (`data/region-levels.csv`, DECISIONS D36, D41): UK ceremonial counties / council areas, Slovenia, North Macedonia and Malta statistical regions, Serbia districts, France's 22 historical regions.
 3. **Region keys are ISO 3166-2 codes** (e.g. `FR-IDF`, `SE-AB`). Use a documented fallback ID only where ISO has no code.
 4. **A city's region is precomputed at build time** with a spatial join (point-in-polygon) and shipped inside the city index. The browser does no geometry lookups for indexed cities. A runtime point-in-polygon fallback is fine for places that aren't in the index.
 5. **Data pipeline is reproducible.** Scripts in `/pipeline`, pinned to an Overture release (e.g. `2026-10-21.0`), re-runnable from scratch. Generated files are versioned (e.g. `regions.v2026-10.pmtiles`) so caches never serve mismatched data.
@@ -49,7 +49,7 @@ Visited cities:
 
 - **Static-first.** The MVP has no backend: app, map tiles, and city index are static files on a CDN. User data is stored locally (IndexedDB), with JSON export and import.
 - **Map:** MapLibre GL JS (v6) with a flat map/globe toggle; region fills via `feature-state`; boundaries served as PMTiles.
-- **Basemap:** a minimal custom style (land, water, borders, few labels), not a busy street map. Optional OpenFreeMap or Protomaps for labels, with a fallback.
+- **Basemap:** a minimal custom style (land, water, lakes, major rivers, borders, a clear text hierarchy by size and weight, no uppercase), not a busy street map. Built from our own data plus Natural Earth (D19, D42, D43).
 - **City index:** built from GeoNames `cities1000` (or Overture localities if you have a good reason), sharded by name prefix so each search loads only a small file.
 - **Hosting:** Cloudflare Pages (app) and R2 (tiles and index), with long cache headers on versioned files.
 - **Later (post-MVP):** Supabase for accounts and sync (auth, row-level security on every table, PostGIS for re-tagging cities when boundaries change). The local-first store stays primary on the device.
