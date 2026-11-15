@@ -1,0 +1,13 @@
+# Countries whose regions are NOT the default level (DECISIONS D36, agreed with Dmitry 2026-11-14).
+# country   : ISO 3166-1 alpha-2
+# level     : Overture subtype used as building blocks (region | county)
+# grouping  : optional CSV in data/groupings/ mapping each building block to the region it belongs to
+#             (columns: match = Overture ISO code or name, region = display name, local = local name,
+#              key = region key; empty key -> documented fallback key, see build_regions.py)
+# reason    : why
+country,level,grouping,reason
+GB,county,GB.csv,"England's 48 ceremonial counties (City of London inside Greater London), Scotland's 32 council areas, Wales' 22 principal areas, Northern Ireland's 11 districts; England/Scotland/Wales/NI were too coarse"
+SI,region,SI.csv,"12 statistical regions instead of 212 municipalities (too fine)"
+MK,region,MK.csv,"8 statistical regions instead of 71 municipalities (too fine)"
+MT,region,MT.csv,"6 regions instead of 68 local councils (too fine)"
+RS,county,RS.csv,"24 districts + City of Belgrade instead of 2 regions (too coarse); Kosovo's districts are in Kosovo (neutral view, D8)"

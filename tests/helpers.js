@@ -2,8 +2,11 @@ import { readFile, readdir } from 'node:fs/promises';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
-export const SEARCH_DIR = new URL('../dist/data/v2026-10/search/', import.meta.url).pathname;
-export const DIST_DIR = new URL('../dist/data/v2026-10/', import.meta.url).pathname;
+import versions from '../data/data-version.json' with { type: 'json' };
+
+export const DATA_VERSION = versions.dataVersion;
+export const DIST_DIR = new URL(`../dist/data/v${DATA_VERSION}/`, import.meta.url).pathname;
+export const SEARCH_DIR = `${DIST_DIR}search/`;
 export const indexBuilt = existsSync(join(SEARCH_DIR, 'manifest.json'));
 
 export async function readJson(path) {

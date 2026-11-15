@@ -74,3 +74,25 @@ describe('region card wording', () => {
     assert.equal(m.loading, true);
   });
 });
+
+describe('region card: add a city here', async () => {
+  const { filterPlaces } = await import('../app/src/ui/region-model.js');
+  const places = [
+    { cityId: 'gn:1', name: 'Oxford', population: 150000 }, { cityId: 'gn:2', name: 'Abingdon-on-Thames', population: 33000 },
+    { cityId: 'gn:3', name: 'Bicester', population: 32000 }, { cityId: 'gn:4', name: 'Henley-on-Thames', population: 11000 },
+    { cityId: 'gn:5', name: 'Thame', population: 11000 },
+  ];
+  test('quick-add lists the largest cities not yet visited', () => {
+    const m = describeRegion('GB-OXF', { regions: { 'GB-OXF': { name: 'Oxfordshire', cc: 'GB' } }, countries: {}, places,
+      visits: [{ cityId: 'gn:1', name: 'Oxford', regionId: 'GB-OXF', countryIso: 'GB', lat: 0, lon: 0, addedAt: 't' }] });
+    assert.deepEqual(m.quickAdd.map((p) => p.name), ['Abingdon-on-Thames', 'Bicester', 'Henley-on-Thames', 'Thame']);
+  });
+  test('quick-add is null while the city list loads', () => {
+    assert.equal(describeRegion('GB-OXF', {}).quickAdd, null);
+  });
+  test('region search matches the start of the name or of a later word, accent/case-insensitive', () => {
+    assert.deepEqual(filterPlaces(places, 'tha').map((p) => p.name), ['Abingdon-on-Thames', 'Henley-on-Thames', 'Thame']);
+    assert.deepEqual(filterPlaces(places, 'BIC').map((p) => p.name), ['Bicester']);
+    assert.deepEqual(filterPlaces(places, ''), []);
+  });
+});

@@ -2,8 +2,9 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { createSearch } from '../shared/search.js';
+import { SEARCH_DIR } from './helpers.js';
 
-const dir = new URL('../dist/data/v2026-10/search/', import.meta.url).pathname;
+const dir = SEARCH_DIR;
 const manifest = JSON.parse(await readFile(join(dir, 'manifest.json'), 'utf8'));
 const loadShard = async (f) => {
   try { return JSON.parse(await readFile(join(dir, f), 'utf8')); }

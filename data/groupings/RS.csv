@@ -1,0 +1,28 @@
+# Serbia: Overture 'county' units (districts) kept one-to-one, keyed by ISO 3166-2:RS (RS-00 Belgrade, RS-01..24).
+# RS-25..29 (Kosovo's districts) are not part of Serbia in the neutral view (D8).
+match,region,local,key
+Град Београд,Belgrade,Град Београд,RS-00
+Севернобачки управни округ,North Bačka District,Севернобачки управни округ,RS-01
+Средњобанатски управни округ,Central Banat District,Средњобанатски управни округ,RS-02
+Севернобанатски управни округ,North Banat District,Севернобанатски управни округ,RS-03
+Јужнобанатски управни округ,South Banat District,Јужнобанатски управни округ,RS-04
+Западнобачки управни округ,West Bačka District,Западнобачки управни округ,RS-05
+Јужнобачки управни округ,South Bačka District,Јужнобачки управни округ,RS-06
+Сремски управни округ,Srem District,Сремски управни округ,RS-07
+Мачвански управни округ,Mačva District,Мачвански управни округ,RS-08
+Колубарски управни округ,Kolubara District,Колубарски управни округ,RS-09
+Подунавски управни округ,Podunavlje District,Подунавски управни округ,RS-10
+Браничевски управни округ,Braničevo District,Браничевски управни округ,RS-11
+Шумадијски управни округ,Šumadija District,Шумадијски управни округ,RS-12
+Поморавски управни округ,Pomoravlje District,Поморавски управни округ,RS-13
+Борски управни округ,Bor District,Борски управни округ,RS-14
+Зајечарски управни округ,Zaječar District,Зајечарски управни округ,RS-15
+Златиборски управни округ,Zlatibor District,Златиборски управни округ,RS-16
+Моравички управни округ,Moravica District,Моравички управни округ,RS-17
+Рашки управни округ,Raška District,Рашки управни округ,RS-18
+Расински управни округ,Rasina District,Расински управни округ,RS-19
+Нишавски управни округ,Nišava District,Нишавски управни округ,RS-20
+Топлички управни округ,Toplica District,Топлички управни округ,RS-21
+Пиротски управни округ,Pirot District,Пиротски управни округ,RS-22
+Јабланички управни округ,Jablanica District,Јабланички управни округ,RS-23
+Пчињски управни округ,Pčinja District,Пчињски управни округ,RS-24

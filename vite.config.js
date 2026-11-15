@@ -5,6 +5,7 @@ import sirv from 'sirv';
 import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import versions from './data/data-version.json' with { type: 'json' };
 
 const dataDir = fileURLToPath(new URL('./dist/data', import.meta.url));
 const serveData = () => {
@@ -15,7 +16,7 @@ const serveData = () => {
   const mount = (server) => {
     server.middlewares.use('/data', (req, res) => handler(req, res, () => notFound(req, res)));
     // Say clearly, in the terminal, which folder the app reads its map data from.
-    const manifest = resolve(dataDir, 'v2026-10', 'manifest.json');
+    const manifest = resolve(dataDir, `v${versions.dataVersion}`, 'manifest.json');
     const projectDir = resolve(dataDir, '..', '..');
     if (existsSync(manifest)) console.log(`\n  Map data: found in ${resolve(dataDir)}\n`);
     else console.warn(`\n  ⚠ Map data NOT found in ${resolve(dataDir)}\n    Run this in ${projectDir}:  pipeline/run_all.sh   (about 20 minutes, once)\n`);

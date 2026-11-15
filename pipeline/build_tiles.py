@@ -12,10 +12,20 @@ import sys
 
 import config as C
 
+POLYGON_FLAGS = [
+    "--detect-shared-borders",          # shared edges simplify identically
+    "--no-tiny-polygon-reduction",      # never drop a small region (it might be visited)
+    "--simplification=4",
+    # Zoomed-out tiles use a coarser grid (2^10 instead of 2^12 units per tile): invisible at
+    # that scale, but the world-view tiles get ~2x smaller, which matters for the first frame.
+    "--low-detail=10", "--full-detail=12",
+]
 LAYERS = {
-    # name: (max zoom, extra flags)
-    "regions": (10, []),
-    "countries": (8, []),
+    # name: (max zoom, flags)
+    "regions": (10, POLYGON_FLAGS),
+    "countries": (8, POLYGON_FLAGS),
+    # City points: each feature carries its own minzoom (build_places.py); keep every point.
+    "places": (10, ["-r1", "--no-feature-limit"]),
 }
 
 
@@ -27,20 +37,14 @@ def main():
     shutil.rmtree(tmp, ignore_errors=True)
     tmp.mkdir(parents=True)
     out = {}
-    for name, (maxzoom, extra) in LAYERS.items():
+    for name, (maxzoom, flags) in LAYERS.items():
         dest = C.DIST / f"{name}.v{C.DATA_VERSION}.pmtiles"
         cmd = [str(C.TIPPECANOE), "-o", str(tmp / dest.name), "--force", "--quiet",
                "-l", name, "-Z", "0", "-z", str(maxzoom),
-               "--detect-shared-borders",          # shared edges simplify identically
-               "--no-tiny-polygon-reduction",      # never drop a small region (it might be visited)
-               "--simplification=4",
-               # Zoomed-out tiles use a coarser grid (2^10 instead of 2^12 units per tile): invisible at
-               # that scale, but the world-view tiles get ~2x smaller, which matters for the first frame.
-               "--low-detail=10", "--full-detail=12",
                "--maximum-tile-bytes=750000",
                "--attribution", "© OpenStreetMap contributors, Overture Maps Foundation (ODbL)",
                "--name", f"Region Tracker {name} {C.DATA_VERSION}",
-               *extra, str(C.BUILD / f"{name}.geojsonl")]
+               *flags, str(C.BUILD / f"{name}.geojsonl")]
         subprocess.run(cmd, check=True)
         shutil.move(tmp / dest.name, dest)
         out[name] = {"file": dest.name, "mb": round(dest.stat().st_size / 1e6, 1), "maxzoom": maxzoom}

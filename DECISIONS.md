@@ -132,6 +132,57 @@ Newest first within each phase. Format: decision, reason, alternatives considere
 - Selecting a region by keyboard alone isn't possible yet. Arrow keys, + and − move the map, and Phase 2's search is the keyboard path to a place. Full keyboard and screen-reader review is in Phase 3.
 - Security headers (CSP: MapLibre needs `worker-src` for its module worker), cache headers and CDN compression come in Phase 4.
 
+## Phase 3: map-first adding + better regions (2026-11-15)
+
+### D37. One place for the data version; this release is `2026-10.2`
+- `data/data-version.json` is the only place the map-data version is set. The pipeline, the app, the dev server and the tests all read it, and it keeps a short history of changes.
+- **Bumped to `2026-10.2`,** because region keys changed (D36). Every published file has a new name, so CDN caches can't mix versions.
+- **Saved cities are re-checked automatically.** A browser test proves a London saved under the old `GB-ENG` key moves to Greater London.
+
+### D38. How the per-country levels (D36) were built
+- **Tables:** `data/region-levels.csv` lists each country's building blocks and grouping table, with a reason per row. The build **stops** if a building block is missing from its table, so nothing can silently fall into the wrong region.
+- **UK** (`data/groupings/GB.csv`, hand-written and verified by tests):
+  - England's 151 units are grouped into 47 ceremonial counties, with the City of London inside Greater London.
+  - Stockton-on-Tees straddles Durham and North Yorkshire and is placed in County Durham, where most of it lies.
+  - Scotland's 32, Wales' 22 and Northern Ireland's 11 units are kept one-to-one with their ISO 3166-2:GB codes (Highland = `GB-HLD`).
+  - UK total: 112 regions.
+- **Serbia:** the 25 district units are kept one-to-one with ISO codes `RS-00` (Belgrade) to `RS-24`. Serbia's 5 other official districts are in Kosovo, which is its own territory in the neutral view (D8), so Serbia has **25** regions, not 30.
+- **Slovenia, North Macedonia, Malta:** the groupings come from Wikidata (CC0) via `pipeline/tools/fetch_groupings.py`, and the output is committed. The build never calls Wikidata, so it stays reproducible offline.
+  - Slovenia: 212 municipalities → 12 statistical regions, with SURS English names (Central Slovenia, Drava…) and Slovene local names.
+  - North Macedonia: 71 → 8 statistical regions. Two manual rows with reasons: the City of Skopje has no code in Overture, and Prilep is missing in Wikidata.
+  - **Malta:** 68 councils → Malta's **6 official regions** (Eastern, Western, Port, Northern, Southern, Gozo). These are the regions Wikidata links fully; the older 6 statistical districts are only partly linked there.
+- **Keys:** a grouped region without an ISO code gets `<CC>-X` + the first 6 hex characters of sha1("CC:region name"), e.g. Greater London = `GB-XF82478`. Tests pin these keys, so they can never change silently.
+- **Network:** the build environment now allows `query.wikidata.org`, `www.wikidata.org`, `commons.wikimedia.org` and `upload.wikimedia.org`. Only the groupings script and, later, the flags (Phase 4) use them.
+
+### D40. GeoNames downloads are pinned once cached (bug found by a clean rebuild)
+- **Bug:** GeoNames changes its files daily. On a re-run, the download step saw a new file size and *resumed*, gluing today's file onto yesterday's and corrupting both zips. A full clean rebuild before release caught it.
+- **Fix:**
+  - A cached GeoNames file is reused, which makes rebuilds identical. `download.py --refresh-geonames` fetches fresh files deliberately, always as a complete download to a temporary name, swapped in only once complete.
+  - Every zip is integrity-checked, and a corrupt one is downloaded again automatically.
+  - Overture files are versioned releases and still resume safely.
+- **Also fixed:** `run_all.sh` now stops at the first failing step. Before, a failure inside a combined command let later steps run on missing data.
+
+### D39. Cities on the map
+- **New file `places.v<version>.pmtiles`:** all 162k cities. Each one appears from a zoom level set by its population:
+  - 5M+: zoom 1
+  - 1M+: zoom 2
+  - 300k+: zoom 3
+  - 100k+: zoom 4
+  - 40k+: zoom 5
+  - 15k+: zoom 6
+  - 5k+: zoom 7
+  - smaller: zoom 8
+  - capitals appear one level earlier.
+
+  Names appear from zoom 5 (D35: only dots when zoomed out). Visited cities are teal dots with teal names; other cities are muted grey dots, colour role `--map-place-*`.
+- **Tapping a dot** (with a finger-sized margin) opens the city popup instead of the region card. The popup's button gets keyboard focus, and Esc closes it.
+- **Show/hide control** (a map button above the zoom buttons, remembered per device): it hides other cities' dots and names. **Your visited cities always stay**, because they're your data. That's easy to change if wanted.
+- **Region card:**
+  - `places/<regionId>.json` lists every city of a region, largest first (typically 0.5 KB, at most ~96 KB). It's loaded when the card opens, and powers the quick-add buttons (the 8 largest not yet visited) and the region search.
+  - Each visited city has ✕ to remove it, with Undo.
+  - Adding from the card or popup doesn't move the camera, because you're already looking at the place.
+- **Speed:** unchanged. Median first frame on this build machine was 2.15 s against 2.3 s for Phase 2 (D31). The edge-tiles change in Phase 5 remains the fix.
+
 ## Plan revision after Phase 2 feedback (2026-11-14)
 
 ### D35. Map-first adding, cities stay the only truth

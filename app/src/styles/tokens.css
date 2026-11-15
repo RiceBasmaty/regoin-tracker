@@ -142,6 +142,10 @@
   --map-visited-country-opacity: 0.55;
   --map-city-dot: var(--palette-teal-600);
   --map-city-dot-stroke: var(--palette-white);
+  --map-place-dot: var(--palette-slate-400);      /* other cities (not visited) */
+  --map-place-dot-stroke: var(--palette-paper);
+  --map-place-label: var(--palette-slate-500);
+  --map-visited-label: var(--palette-teal-700);
   --map-label: var(--palette-slate-500);
   --map-label-strong: var(--palette-slate-700);
   --map-label-halo: var(--palette-paper);
@@ -188,6 +192,10 @@
   --map-visited-country-opacity: 0.6;
   --map-city-dot: var(--palette-teal-400);
   --map-city-dot-stroke: var(--palette-night-1000);
+  --map-place-dot: var(--palette-night-600);
+  --map-place-dot-stroke: var(--palette-night-850);
+  --map-place-label: var(--palette-night-400);
+  --map-visited-label: var(--palette-teal-400);
   --map-label: var(--palette-night-400);
   --map-label-strong: var(--palette-night-200);
   --map-label-halo: var(--palette-night-850);
@@ -236,6 +244,10 @@
     --map-visited-country-opacity: 0.6;
     --map-city-dot: var(--palette-teal-400);
     --map-city-dot-stroke: var(--palette-night-1000);
+    --map-place-dot: var(--palette-night-600);
+    --map-place-dot-stroke: var(--palette-night-850);
+    --map-place-label: var(--palette-night-400);
+    --map-visited-label: var(--palette-teal-400);
     --map-label: var(--palette-night-400);
     --map-label-strong: var(--palette-night-200);
     --map-label-halo: var(--palette-night-850);

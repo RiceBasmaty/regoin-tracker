@@ -30,6 +30,9 @@ export function themedPaint(t) {
     'countries-visited-line': { 'line-color': t['visited-country-line'],
       'line-opacity': ['case', ['boolean', ['feature-state', 'visited'], false], t['visited-country-opacity'], 0] },
     'city-dots': { 'circle-color': t['city-dot'], 'circle-stroke-color': t['city-dot-stroke'] },
+    'places-dots': { 'circle-color': t['place-dot'], 'circle-stroke-color': t['place-dot-stroke'] },
+    'places-labels': { 'text-color': t['place-label'], 'text-halo-color': t['label-halo'] },
+    'visited-labels': { 'text-color': t['visited-label'], 'text-halo-color': t['label-halo'] },
     'country-labels': { 'text-color': t['label-strong'], 'text-halo-color': t['label-halo'] },
     'region-labels': { 'text-color': t.label, 'text-halo-color': t['label-halo'] },
   };
@@ -52,7 +55,8 @@ export function sky(t) {
  * @param {string} p.glyphs   glyphs URL template
  * @param {'globe'|'mercator'} p.projection
  */
-export function buildStyle({ tokens: t, regionsUrl, countriesUrl, glyphs, projection = 'globe' }) {
+export function buildStyle({ tokens: t, regionsUrl, countriesUrl, placesUrl, glyphs, projection = 'globe', showPlaces = true }) {
+  const placesVisibility = showPlaces ? 'visible' : 'none';
   const paint = themedPaint(t);
   const emptyLabels = { type: 'geojson', data: { type: 'FeatureCollection', features: [] } };
   return {
@@ -63,6 +67,8 @@ export function buildStyle({ tokens: t, regionsUrl, countriesUrl, glyphs, projec
     sources: {
       regions: { type: 'vector', url: regionsUrl, promoteId: 'id' },
       countries: { type: 'vector', url: countriesUrl, promoteId: 'id' },
+      // All indexed cities; each appears from a zoom level set by its population (build_places.py).
+      places: { type: 'vector', url: placesUrl, promoteId: 'id' },
       // Filled from countries/regions JSON after the first frame (labels are not needed to start).
       'country-labels': emptyLabels,
       'region-labels': emptyLabels,
@@ -94,10 +100,36 @@ export function buildStyle({ tokens: t, regionsUrl, countriesUrl, glyphs, projec
         paint: { ...paint['countries-visited-line'], 'line-width': ['interpolate', ['linear'], ['zoom'], 0, 1.2, 4, 2, 8, 2.6] },
       },
       {
+        id: 'places-dots', type: 'circle', source: 'places', 'source-layer': 'places',
+        layout: { visibility: placesVisibility },
+        paint: { ...paint['places-dots'], 'circle-stroke-width': 1,
+                 'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, 2.2, 5, 2.8, 10, 3.8],
+                 // a visited city is drawn by the city-dots layer instead
+                 'circle-opacity': ['case', ['boolean', ['feature-state', 'visited'], false], 0, 1],
+                 'circle-stroke-opacity': ['case', ['boolean', ['feature-state', 'visited'], false], 0, 1],
+                 'circle-pitch-alignment': 'map' },
+      },
+      {
         id: 'city-dots', type: 'circle', source: 'visited-cities',
         paint: { ...paint['city-dots'], 'circle-stroke-width': 1.5,
                  'circle-radius': ['interpolate', ['linear'], ['zoom'], 1, 2.5, 5, 4, 10, 6],
                  'circle-pitch-alignment': 'map' },
+      },
+      {
+        id: 'places-labels', type: 'symbol', source: 'places', 'source-layer': 'places', minzoom: 5,
+        layout: { visibility: placesVisibility, 'text-field': ['get', 'name'], 'text-font': FONT,
+                  'text-size': ['interpolate', ['linear'], ['zoom'], 5, 10.5, 10, 12.5], 'text-anchor': 'top',
+                  'text-offset': [0, 0.45], 'text-max-width': 8, 'text-optional': true,
+                  'symbol-sort-key': ['-', 0, ['get', 'pop']] },
+        // a visited city's name is drawn by visited-labels (feature-state cannot be used in filters)
+        paint: { ...paint['places-labels'], 'text-halo-width': 1.2,
+                 'text-opacity': ['case', ['boolean', ['feature-state', 'visited'], false], 0, 1] },
+      },
+      {
+        id: 'visited-labels', type: 'symbol', source: 'visited-cities', minzoom: 5,
+        layout: { 'text-field': ['get', 'name'], 'text-font': FONT, 'text-size': ['interpolate', ['linear'], ['zoom'], 5, 11.5, 10, 13.5],
+                  'text-anchor': 'top', 'text-offset': [0, 0.55], 'text-max-width': 8, 'symbol-sort-key': 0 },
+        paint: { ...paint['visited-labels'], 'text-halo-width': 1.6 },
       },
       {
         id: 'region-labels', type: 'symbol', source: 'region-labels', minzoom: 4.5,

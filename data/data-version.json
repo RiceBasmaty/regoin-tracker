@@ -1,0 +1,9 @@
+{
+  "_comment": "THE single place for the map-data version. The pipeline names every output file with it, the app loads those files, and saved cities are re-checked when it changes (DECISIONS D32, D37). Bump it whenever regions, region keys or the city index change.",
+  "dataVersion": "2026-10.2",
+  "overtureRelease": "2026-10-21.0",
+  "history": [
+    { "version": "2026-10", "date": "2026-11-14", "change": "First build (Phase 0-2)." },
+    { "version": "2026-10.2", "date": "2026-11-15", "change": "Per-country region levels: UK counties, Slovenia/North Macedonia/Malta statistical regions, Serbia districts (D36); city places layer." }
+  ]
+}

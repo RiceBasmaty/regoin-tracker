@@ -12,6 +12,9 @@ Rules (see DECISIONS.md):
 * If a country's chosen regions cover less than MIN_REGION_COVERAGE of its land
   (e.g. Overture only maps 2 tiny districts of the West Bank), the whole country
   becomes one region instead: half-mapped regions would mis-file most cities.
+* Some countries use another level and/or merge building blocks into agreed regions
+  (data/region-levels.csv + data/groupings/<CC>.csv, DECISIONS D36). A grouped region
+  without an ISO code gets the key `<CC>-X<first 6 hex of sha1("<CC>:<region name>")>`.
 * data/region-overrides.csv is applied last.
 
 Outputs (in build/):
@@ -20,6 +23,7 @@ Outputs (in build/):
   regions.meta.json / countries.meta.json  names, bbox, label point (published)
 """
 import csv
+import hashlib
 import json
 import sys
 
@@ -66,6 +70,45 @@ def fallback_id(cc, division_id):
     return f"{cc}-X{division_id.replace('-', '')[:6].upper()}"
 
 
+def read_csv_rows(path):
+    with open(path, encoding="utf-8") as f:
+        return list(csv.DictReader(line for line in f if not line.startswith("#")))
+
+
+def load_levels():
+    """{cc: (level, grouping rows or None, reason)} from data/region-levels.csv."""
+    out = {}
+    for r in read_csv_rows(C.REGION_LEVELS):
+        if not r["reason"].strip():
+            sys.exit(f"region-levels.csv: row without a reason: {r}")
+        groups = read_csv_rows(C.GROUPINGS / r["grouping"]) if r["grouping"].strip() else None
+        out[r["country"]] = (r["level"], groups, r["reason"])
+    return out
+
+
+def group_key(cc, name):
+    return f"{cc}-X{hashlib.sha1(f'{cc}:{name}'.encode()).hexdigest()[:6].upper()}"
+
+
+def apply_grouping(cc, units, rows, report):
+    """Merge building blocks into the agreed regions. Every block must be listed (strict)."""
+    by_match = {r["match"].strip(): r for r in rows}
+    target = []
+    for _, u in units.iterrows():
+        r = by_match.get(u["name_local"]) or by_match.get(u["name"]) or by_match.get(u["region"] or "")
+        if r is None:
+            sys.exit(f"{cc}: building block '{u['name_local']}' ({u['region']}) is not in data/groupings/{cc}.csv")
+        target.append(r)
+    units = units.assign(_region=[r["region"] for r in target], _local=[r["local"] or None for r in target],
+                         _key=[r["key"] or group_key(cc, r["region"]) for r in target])
+    merged = units.dissolve(by="_key", aggfunc={"_region": "first", "_local": "first"}).reset_index()
+    report.setdefault("grouped", {})[cc] = {"blocks": len(units), "regions": len(merged),
+                                            "unused_rows": sorted(set(by_match) - {r["match"].strip() for r in target})}
+    return gpd.GeoDataFrame({"division_id": None, "country": cc, "region": merged["_key"], "name": merged["_region"],
+                             "name_local": merged["_local"].fillna(merged["_region"]), "subtype": "grouped",
+                             "geometry": merged.geometry}, geometry="geometry", crs="EPSG:4326")
+
+
 def load_overrides():
     rows = []
     with open(C.OVERRIDES, encoding="utf-8") as f:
@@ -89,9 +132,18 @@ def main():
 
     # ---- regions, with level fallback per country ----
     parts = []
+    levels = load_levels()
     for cc in sorted(countries.cc):
         sub = areas[areas.country == cc]
         chosen = None
+        if cc in levels:   # agreed per-country level / grouping (D36)
+            level, rows, _ = levels[cc]
+            blocks = sub[sub.subtype == level]
+            if blocks.empty:
+                sys.exit(f"{cc}: no Overture '{level}' units (region-levels.csv)")
+            chosen = apply_grouping(cc, blocks, rows, report) if rows else blocks.copy()
+            parts.append(chosen)
+            continue
         for level in ["region", "macrocounty", "county"]:
             lv = sub[sub.subtype == level]
             if len(lv):

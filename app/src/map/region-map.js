@@ -10,6 +10,9 @@ import { ATTRIBUTION, GLYPHS_URL, INITIAL_CENTER, initialZoom, dataUrl, DATA_VER
 
 const REGION = { source: 'regions', sourceLayer: 'regions' };
 const COUNTRY = { source: 'countries', sourceLayer: 'countries' };
+const PLACE = { source: 'places', sourceLayer: 'places' };
+const CITY_LAYERS = ['city-dots', 'places-dots'];   // visited first: it wins when both are under the finger
+const placeId = (cityId) => Number(String(cityId).replace(/^gn:/, ''));
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 let protocolAdded = false;
 
@@ -20,7 +23,7 @@ export function webglSupported() {
   } catch { return false; }
 }
 
-export function createRegionMap({ container, tokens, projection, onSelect, onHover, onError }) {
+export function createRegionMap({ container, tokens, projection, showPlaces = true, onSelect, onCityClick, onHover, onError }) {
   if (!protocolAdded) {
     setWorkerUrl(new URL(workerUrl, location.href).href);
     // metadata:false - the attribution is shown once by our own AttributionControl text.
@@ -30,10 +33,12 @@ export function createRegionMap({ container, tokens, projection, onSelect, onHov
   const urls = {
     regions: `pmtiles://${new URL(dataUrl(`regions.v${DATA_VERSION}.pmtiles`), location.href).href}`,
     countries: `pmtiles://${new URL(dataUrl(`countries.v${DATA_VERSION}.pmtiles`), location.href).href}`,
+    places: `pmtiles://${new URL(dataUrl(`places.v${DATA_VERSION}.pmtiles`), location.href).href}`,
   };
   const map = new MapLibreMap({
     container,
-    style: buildStyle({ tokens, regionsUrl: urls.regions, countriesUrl: urls.countries, glyphs: GLYPHS_URL, projection }),
+    style: buildStyle({ tokens, regionsUrl: urls.regions, countriesUrl: urls.countries, placesUrl: urls.places,
+                        glyphs: GLYPHS_URL, projection, showPlaces }),
     center: INITIAL_CENTER,
     zoom: initialZoom(container.clientWidth, container.clientHeight),
     minZoom: 0.5,
@@ -45,7 +50,9 @@ export function createRegionMap({ container, tokens, projection, onSelect, onHov
     localIdeographFontFamily: "'Noto Sans CJK SC', 'Hiragino Sans', 'Microsoft YaHei', sans-serif",
   });
   map.touchZoomRotate.disableRotation();
-  map.addControl(new NavigationControl({ showCompass: false }), 'bottom-right');
+  const nav = new NavigationControl({ showCompass: false });
+  map.addControl(nav, 'bottom-right');
+  nav._container?.classList.add('zoom-control');
   map.addControl(new AttributionControl({ compact: false, customAttribution: ATTRIBUTION }), 'bottom-left');
 
   const canvas = map.getCanvas();
@@ -82,7 +89,25 @@ export function createRegionMap({ container, tokens, projection, onSelect, onHov
     selected = id;
     if (id != null) map.setFeatureState({ ...REGION, id }, { selected: true });
   }
+  // A city dot under the pointer (with a finger-sized margin) wins over the region around it.
+  function cityAt(point) {
+    const pad = 8;
+    const box = [[point.x - pad, point.y - pad], [point.x + pad, point.y + pad]];
+    const layers = CITY_LAYERS.filter((l) => map.getLayer(l) && map.getLayoutProperty(l, 'visibility') !== 'none');
+    const hits = map.queryRenderedFeatures(box, { layers });
+    if (!hits.length) return null;
+    const dist = (f) => { const p = map.project(f.geometry.coordinates); return (p.x - point.x) ** 2 + (p.y - point.y) ** 2; };
+    const best = hits.sort((a, b) => (a.layer.id === 'city-dots' ? -1 : 0) - (b.layer.id === 'city-dots' ? -1 : 0) || dist(a) - dist(b))[0];
+    const p = best.properties;
+    const [lon, lat] = best.geometry.coordinates;
+    return { cityId: typeof p.id === 'string' && p.id.startsWith('gn:') ? p.id : `gn:${p.id}`, name: p.name,
+             regionId: p.rid ?? p.regionId, lon, lat };
+  }
+  map.on('mousemove', (e) => { if (cityAt(e.point)) canvas.style.cursor = 'pointer'; });
+
   map.on('click', (e) => {
+    const city = cityAt(e.point);
+    if (city && onCityClick) { onCityClick(city); return; }
     const f = map.queryRenderedFeatures(e.point, { layers: ['regions-fill'] })[0];
     const id = f?.id ?? null;
     select(id);
@@ -99,7 +124,7 @@ export function createRegionMap({ container, tokens, projection, onSelect, onHov
 
   // Visited regions/countries are feature-state (no re-styling). Calls made before the
   // style has loaded are remembered and applied on 'load'.
-  const visitedState = new Map([[REGION, new Set()], [COUNTRY, new Set()]]);
+  const visitedState = new Map([[REGION, new Set()], [COUNTRY, new Set()], [PLACE, new Set()]]);
   // Our own "ready" flag: map.isStyleLoaded() is briefly false while tiles load (e.g. mid-flight),
   // which must not divert updates into a queue that is only drained once.
   let styleReady = false;
@@ -115,6 +140,7 @@ export function createRegionMap({ container, tokens, projection, onSelect, onHov
     if (!styleReady) { pending = { regions, countries, cities }; return; }
     applyVisited(REGION, regions);
     applyVisited(COUNTRY, countries);
+    applyVisited(PLACE, cities.map((v) => placeId(v.cityId)));
     map.getSource('visited-cities')?.setData({
       type: 'FeatureCollection',
       features: cities.map((v) => ({ type: 'Feature', properties: { id: v.cityId, name: v.name, regionId: v.regionId },
@@ -128,6 +154,11 @@ export function createRegionMap({ container, tokens, projection, onSelect, onHov
     select,
     setVisited,
     setProjection(type) { map.setProjection({ type }); },
+    addControl(control, position = 'bottom-right') { map.addControl(control, position); },
+    /** Show or hide other cities' dots and names (your visited cities always stay). */
+    setPlacesVisible(on) {
+      for (const l of ['places-dots', 'places-labels']) if (map.getLayer(l)) map.setLayoutProperty(l, 'visibility', on ? 'visible' : 'none');
+    },
     /** Fly to a city: close enough to see its region, never zooming out if already closer. */
     flyTo({ lon, lat }) {
       const zoom = Math.max(map.getZoom(), 5.5);
@@ -146,7 +177,7 @@ export function createRegionMap({ container, tokens, projection, onSelect, onHov
     },
     /** Re-request map data after an error or when the connection comes back. */
     retry() {
-      for (const id of ['regions', 'countries']) map.getSource(id)?.setUrl(urls[id]);
+      for (const id of ['regions', 'countries', 'places']) map.getSource(id)?.setUrl(urls[id]);
     },
   };
 }

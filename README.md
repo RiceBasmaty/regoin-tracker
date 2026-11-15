@@ -7,19 +7,24 @@ Product brief and rules: [`CLAUDE.md`](CLAUDE.md). The plan for the remaining ph
 - Phase 0 (data pipeline): done.
 - Phase 1 (map shell): done. Flat map and globe, hover, a region card when you click, dark mode, phone layout, error messages.
 - Phase 2 (add a city): done. Search, save cities on the device, city dots, visited regions and countries, fly-to, "Added · Undo".
+- Phase 3 (map-first adding + better regions): done. Cities on the map, tap a city to add it, quick-add and region search in the region card, remove from the card, UK counties, and statistical regions for Slovenia, North Macedonia and Malta, plus Serbian districts.
 
 ## What Phase 0 produces
 
-Running the pipeline creates `dist/data/v2026-10/`. That folder gets uploaded to the CDN as-is:
+Running the pipeline creates `dist/data/v<version>/`, where the version is set in `data/data-version.json` (now `2026-10.2`). That folder gets uploaded to the CDN as-is:
 
 | File | What it is | Size |
 |---|---|---|
-| `regions.v2026-10.pmtiles` | Map tiles for ~4,000 regions (French régions, Swedish län, US states…); each shape carries only its key (`FR-IDF`) and country | ~61 MB (a phone loads only the few tiles it shows) |
-| `countries.v2026-10.pmtiles` | Map tiles for 272 countries/territories | ~12 MB |
-| `regions.v2026-10.json` | For every region: name, local name, country, bounding box, label point | ~0.5 MB |
-| `countries.v2026-10.json` | For every country: name, number of regions (for "% of regions visited") | small |
-| `search/*.json` | City search index: ~162,000 cities split into ~21,000 small files by their first letters; one search loads one file (median 0.2 KB, max ~66 KB) | ~41 MB total |
+| `regions.v….pmtiles` | Map tiles for ~3,800 regions (French régions, Swedish län, US states, English counties…); each shape carries only its key (`FR-IDF`) and country | ~44 MB (a phone loads only the few tiles it shows) |
+| `countries.v….pmtiles` | Map tiles for 272 countries/territories | ~7 MB |
+| `places.v….pmtiles` | All 162k cities as map dots, big cities first as you zoom in | ~25 MB |
+| `regions.v….json` | For every region: name, local name, country, land area, bounding box, label point | ~0.5 MB |
+| `countries.v….json` | For every country: name, number of regions, UN member or territory | small |
+| `places/<region>.json` | Every city of one region, largest first (region card: quick-add and search) | ~3,700 files, typically 0.5 KB |
+| `search/*.json` | City search index split into ~24,000 small files by first letters; one search loads one file | ~42 MB total |
 | `manifest.json` | Sizes, checksums, input files, licences | |
+
+Which countries use a different region level, and how their regions are grouped: `data/region-levels.csv` and `data/groupings/`.
 
 The shared browser/Node code lives in `shared/`:
 - `normalize.js` strips accents and folds case, so `goteborg` = `Göteborg`. It's identical to `pipeline/textnorm.py`, and a test enforces that.
@@ -105,9 +110,11 @@ npm run demo:search -- paris goteborg moskva "new y" stockholm
 ## Troubleshooting
 
 - **The build reports** are in `build/*.report.json`: which countries fell back to another level, which cities snapped to a region, which cities' country differs from GeoNames, shard sizes. Read these first when a number looks off.
+- **After a `git pull` that changes `data/data-version.json`:** run `pipeline/run_all.sh` again (~6–10 minutes with downloads cached). The dev server tells you if the data for the current version is missing. Saved cities move to their new regions automatically.
 - **A city is in the wrong region:** if the city's GeoNames point is wrong, add a row to `data/city-overrides.csv`. If the boundary is wrong, add a row to `data/region-overrides.csv`. Every row needs a reason. Then re-run.
 - **Updating to a new Overture release:** change `OVERTURE_RELEASE` and `DATA_VERSION` in `pipeline/config.py`, then run `pipeline/run_all.sh --clean`. Every output file name changes, so old and new data never mix in a cache. The region-count test will flag it if a country's regions changed.
-- **A download fails halfway:** just re-run. Files are resumed and checked against the server's size.
+- **A download fails halfway:** just re-run. Overture files resume; GeoNames files are re-downloaded whole, and every zip is integrity-checked.
+- **Fresh city data:** GeoNames is downloaded once and then reused, so rebuilds give identical results. To get today's GeoNames, run `cd pipeline && ../.venv/bin/python download.py --refresh-geonames`, then `pipeline/run_all.sh`.
 
 ## Layout
 

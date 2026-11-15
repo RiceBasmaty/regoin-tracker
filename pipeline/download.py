@@ -1,8 +1,12 @@
 """Step 1: download pinned inputs into pipeline/cache (skips files already complete).
 
-Overture: every parquet file of the pinned release's division_area type.
-GeoNames: cities1000 + alternate names + country info.
-Each file's size is checked against the server; partial files are resumed.
+Overture: every parquet file of the pinned release's division_area type. Releases never
+change, so a partial file is safely resumed.
+GeoNames: cities1000 + alternate names + country info. GeoNames changes its files DAILY, so:
+  * once downloaded, the cached copy is reused (rebuilds stay identical: the copy is the pin);
+  * `download.py --refresh-geonames` fetches today's files, always as a complete new download
+    (resuming would glue two different versions together and corrupt the zip).
+Every zip is integrity-checked; a broken one is deleted and downloaded again.
 """
 import hashlib
 import json
@@ -10,6 +14,7 @@ import re
 import sys
 import time
 import urllib.request
+import zipfile
 from datetime import datetime, timezone
 
 import config as C
@@ -19,6 +24,33 @@ def _remote_size(url):
     req = urllib.request.Request(url, method="HEAD")
     with urllib.request.urlopen(req, timeout=60) as r:
         return int(r.headers["Content-Length"])
+
+
+def zip_ok(path):
+    try:
+        with zipfile.ZipFile(path) as z:
+            return z.testzip() is None
+    except zipfile.BadZipFile:
+        return False
+
+
+def fetch_whole(url, dest, attempts=5):
+    """Download to a temporary name, then swap in: never leaves a half/mixed file behind."""
+    tmp = dest.with_suffix(dest.suffix + ".part")
+    for attempt in range(1, attempts + 1):
+        try:
+            print(f"  downloading {dest.name}", flush=True)
+            with urllib.request.urlopen(url, timeout=120) as r, open(tmp, "wb") as out:
+                while chunk := r.read(1 << 20):
+                    out.write(chunk)
+            if dest.suffix == ".zip" and not zip_ok(tmp):
+                raise IOError("downloaded zip is corrupt")
+            tmp.replace(dest)
+            return
+        except Exception as e:
+            print(f"  attempt {attempt} failed: {e}", flush=True)
+            time.sleep(2 ** attempt)
+    sys.exit(f"FAILED to download {url}")
 
 
 def fetch(url, dest, expected=None, attempts=5):
@@ -71,9 +103,15 @@ def main():
             dest = C.OVERTURE_CACHE / f"{type_}-{part}.parquet"
             fetch(f"{C.OVERTURE_BUCKET}/{key}", dest, size)
             manifest["files"][f"overture/{dest.name}"] = {"source": key, "bytes": size}
+    refresh = "--refresh-geonames" in sys.argv
     for name in C.GEONAMES_FILES:
         dest = C.GEONAMES_CACHE / name
-        fetch(f"{C.GEONAMES_BASE}/{name}", dest)
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        broken = dest.exists() and dest.suffix == ".zip" and not zip_ok(dest)
+        if broken:
+            print(f"  {name} is corrupt; downloading again", flush=True)
+        if refresh or broken or not dest.exists():
+            fetch_whole(f"{C.GEONAMES_BASE}/{name}", dest)
         manifest["files"][f"geonames/{name}"] = {"source": f"{C.GEONAMES_BASE}/{name}", "bytes": dest.stat().st_size, "sha256": sha256(dest)}
     C.BUILD.mkdir(parents=True, exist_ok=True)
     (C.BUILD / "inputs.json").write_text(json.dumps(manifest, indent=2))

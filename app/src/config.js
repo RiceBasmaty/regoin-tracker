@@ -1,6 +1,8 @@
 // Where the versioned data lives. Dev: served from dist/data by vite.config.js.
 // Production (Phase 4): the R2/CDN URL, set at build time with VITE_DATA_BASE_URL.
-export const DATA_VERSION = '2026-10';
+import versions from '../../data/data-version.json' with { type: 'json' };
+
+export const DATA_VERSION = versions.dataVersion;   // set in data/data-version.json
 export const DATA_BASE_URL = (import.meta.env?.VITE_DATA_BASE_URL ?? '/data').replace(/\/$/, '') + `/v${DATA_VERSION}`;
 // Built by hand: new URL() would percent-encode the {fontstack}/{range} placeholders MapLibre needs.
 export const GLYPHS_URL = `${new URL('.', document.baseURI).href}fonts/{fontstack}/{range}.pbf`;

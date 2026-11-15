@@ -6,7 +6,7 @@ import pytest
 # (GeoNames id, city, expected region key). Ids avoid ambiguity (there are 9 Parises).
 KNOWN = [
     (2988507, "Paris", "FR-IDF"), (2673730, "Stockholm", "SE-AB"), (5128581, "New York City", "US-NY"),
-    (1850147, "Tokyo", "JP-13"), (2643743, "London", "GB-ENG"), (2950159, "Berlin", "DE-BE"),
+    (1850147, "Tokyo", "JP-13"), (2950159, "Berlin", "DE-BE"),
     (2867714, "Munich", "DE-BY"), (3128760, "Barcelona", "ES-CT"), (3169070, "Rome", "IT-62"),
     (2147714, "Sydney", "AU-NSW"), (3451190, "Rio de Janeiro", "BR-RJ"), (6167865, "Toronto", "CA-ON"),
     (524901, "Moscow", "RU-MOW"), (1275339, "Mumbai", "IN-MH"), (1816670, "Beijing", "CN-BJ"),
@@ -31,6 +31,28 @@ def test_known_city_region(cities, gid, name, expected):
     assert len(row) == 1, f"{name} missing from index"
     assert row.iloc[0]["name"] == name
     assert row.iloc[0]["rid"] == expected
+
+
+# Per-country levels (D36). Keys of grouped regions are pinned on purpose: saved cities refer to
+# regions by key, so a change in how keys are made must never happen silently.
+GROUPED = [
+    (2643743, "London", "GB-XF82478", "Greater London"), (2640729, "Oxford", "GB-X383397", "Oxfordshire"),
+    (2644688, "Leeds", "GB-X9F92C0", "West Yorkshire"), (2643123, "Manchester", "GB-X30F227", "Greater Manchester"),
+    (2639577, "Reading", "GB-XB410A0", "Berkshire"), (2650225, "Edinburgh", "GB-EDH", "City of Edinburgh"),
+    (2653822, "Cardiff", "GB-CRF", "Cardiff"), (2655984, "Belfast", "GB-BFS", "Belfast"),
+    (3196359, "Ljubljana", "SI-X0F217A", "Central Slovenia"), (3195506, "Maribor", "SI-XDA71BF", "Drava"),
+    (785842, "Skopje", "MK-X890D0D", "Skopje Region"), (792578, "Bitola", "MK-X313FDD", "Pelagonia Region"),
+    (2562305, "Valletta", "MT-X4BD54E", "Port Region"), (2562619, "Victoria", "MT-X6BD47D", "Gozo Region"),
+    (792680, "Belgrade", "RS-00", "Belgrade"), (3194360, "Novi Sad", "RS-06", "South Bačka District"),
+]
+
+
+@pytest.mark.parametrize("gid,name,key,region", GROUPED, ids=[g[1] for g in GROUPED])
+def test_per_country_levels(cities, regions_meta, gid, name, key, region):
+    row = cities[cities.geonameid == gid].iloc[0]
+    assert row["name"] == name
+    assert row["rid"] == key
+    assert regions_meta[key]["name"] == region
 
 
 def test_every_city_has_a_known_region(cities, regions_meta):
@@ -84,7 +106,10 @@ def test_region_counts_for_known_countries(countries_meta):
     # Official first-level subdivision counts (ISO 3166-2). Guards against
     # a new Overture release silently merging/splitting regions.
     # ES: 17 communities + Ceuta + Melilla + "Plazas de Soberanía" islets (no ISO code -> fallback key).
-    expected = {"FR": 13, "SE": 21, "DE": 16, "JP": 47, "IT": 20, "ES": 20}
+    # GB: 47 English ceremonial counties (City of London in Greater London) + 32 + 22 + 11 (D36).
+    # RS: 24 districts + Belgrade (Kosovo's districts are in Kosovo, D8).
+    expected = {"FR": 13, "SE": 21, "DE": 16, "JP": 47, "IT": 20, "ES": 20,
+                "GB": 112, "SI": 12, "MK": 8, "MT": 6, "RS": 25}
     got = {cc: countries_meta[cc]["regions"] for cc in expected}
     assert got == expected
 

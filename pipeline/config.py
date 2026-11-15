@@ -4,10 +4,13 @@ Bumping OVERTURE_RELEASE (and DATA_VERSION) and re-running `run_all.sh`
 rebuilds everything from scratch under new, versioned file names, so a CDN
 can never mix old and new data.
 """
+import json
 from pathlib import Path
 
+_VERSION = json.loads((Path(__file__).resolve().parent.parent / "data" / "data-version.json").read_text("utf-8"))
+
 # ---- Pinned inputs ---------------------------------------------------------
-OVERTURE_RELEASE = "2026-10-21.0"
+OVERTURE_RELEASE = _VERSION["overtureRelease"]      # set in data/data-version.json
 OVERTURE_BUCKET = "https://overturemaps-us-west-2.s3.amazonaws.com"
 OVERTURE_TYPES = ["division_area"]          # all we need for regions/countries
 
@@ -17,7 +20,7 @@ GEONAMES_FILES = ["cities1000.zip", "alternateNamesV2.zip", "countryInfo.txt"]
 # is written to build/manifest.json so any build can be traced to its inputs.
 
 # ---- Output versioning -----------------------------------------------------
-DATA_VERSION = "2026-10"                    # appears in every published file name
+DATA_VERSION = _VERSION["dataVersion"]              # set in data/data-version.json; in every file name
 
 # ---- Paths -----------------------------------------------------------------
 ROOT = Path(__file__).resolve().parent.parent
@@ -30,6 +33,8 @@ DIST = ROOT / "dist" / "data" / f"v{DATA_VERSION}"   # files to upload to R2
 OVERRIDES = ROOT / "data" / "region-overrides.csv"
 CITY_OVERRIDES = ROOT / "data" / "city-overrides.csv"
 UN_MEMBERS = ROOT / "data" / "un-member-states.txt"
+REGION_LEVELS = ROOT / "data" / "region-levels.csv"
+GROUPINGS = ROOT / "data" / "groupings"
 TIPPECANOE = ROOT / ".tools" / "env" / "bin" / "tippecanoe"
 
 # ---- Tunables --------------------------------------------------------------

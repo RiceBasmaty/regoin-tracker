@@ -39,6 +39,18 @@ const pixelOf = (page, lngLat) => page.evaluate((ll) => {
   return { x: r.left + p.x, y: r.top + p.y };
 }, lngLat);
 const PARIS = [2.35, 48.86];
+const ILE_DE_FRANCE = [[2.9, 48.6], [2.0, 48.45], [3.2, 48.75], [1.8, 49.05], [2.6, 48.35]];
+// Click a region where no city dot is under the pointer (a dot opens the city popup instead).
+async function clickRegion(page, candidates, { tap = false } = {}) {
+  for (const ll of candidates) {
+    const c = await page.evaluate((ll) => {
+      const m = window.regionTracker.map; const q = m.project(ll); const r = document.querySelector('#map').getBoundingClientRect();
+      return { x: r.left + q.x, y: r.top + q.y, hit: m.queryRenderedFeatures([[q.x - 10, q.y - 10], [q.x + 10, q.y + 10]], { layers: ['places-dots', 'city-dots'] }).length };
+    }, ll);
+    if (!c.hit) { if (tap) await page.touchscreen.tap(c.x, c.y); else await page.mouse.click(c.x, c.y); return; }
+  }
+  throw new Error('no spot without city dots found');
+}
 const GERMANY = [10.4, 51.1];
 
 // ---------- desktop, light ----------
@@ -64,11 +76,10 @@ const GERMANY = [10.4, 51.1];
     await page.waitForSelector('#tooltip:not([hidden])');
     assert.match(await page.textContent('#tooltip'), /· Germany$/);
   });
-  await check('clicking Paris opens the card: Île-de-France, France, not visited', async () => {
-    await page.evaluate(() => window.regionTracker.map.jumpTo({ center: [2.35, 48.86], zoom: 4 }));
+  await check('clicking Île-de-France opens the card: Île-de-France, France, not visited', async () => {
+    await page.evaluate(() => window.regionTracker.map.jumpTo({ center: [2.35, 48.86], zoom: 6 }));
     await page.waitForFunction(() => window.regionTracker.map.loaded());
-    const p = await pixelOf(page, PARIS);
-    await page.mouse.click(p.x, p.y);
+    await clickRegion(page, ILE_DE_FRANCE);
     await page.waitForSelector('#region-card:not([hidden])');
     const card = await page.textContent('#region-card');
     assert.match(card, /Île-de-France/);
@@ -95,10 +106,11 @@ const GERMANY = [10.4, 51.1];
   });
   await check('clicking the sea closes the card', async () => {
     await metaLoaded(page);
-    const p = await pixelOf(page, PARIS);
-    await page.mouse.click(p.x, p.y);
+    await page.evaluate(() => window.regionTracker.map.jumpTo({ center: [-5, 46], zoom: 5 }));
+    await page.waitForFunction(() => window.regionTracker.map.loaded());
+    await clickRegion(page, ILE_DE_FRANCE);
     await page.waitForSelector('#region-card:not([hidden])');
-    const sea = await pixelOf(page, [-35, 35]);  // mid-Atlantic
+    const sea = await pixelOf(page, [-9, 46]);   // Bay of Biscay
     await page.mouse.click(sea.x, sea.y);
     assert.ok(await page.isHidden('#region-card'));
   });
@@ -196,8 +208,7 @@ const GERMANY = [10.4, 51.1];
     await metaLoaded(page);
     await page.evaluate(() => window.regionTracker.map.jumpTo({ center: [2.6, 48.7], zoom: 6 }));
     await page.waitForFunction(() => window.regionTracker.map.loaded());
-    const p = await pixelOf(page, [2.9, 48.6]);
-    await page.mouse.click(p.x, p.y);
+    await clickRegion(page, ILE_DE_FRANCE);
     await page.waitForSelector('#region-card:not([hidden])');
     const text = await page.textContent('#region-card');
     assert.match(text, /Visited · 1 city/);
@@ -239,6 +250,119 @@ const GERMANY = [10.4, 51.1];
   await ctx.close();
 }
 
+// ---------- Phase 3: map-first adding, per-country regions ----------
+{
+  const { ctx, page } = await open({ colorScheme: 'light' });
+  const visits = () => page.evaluate(() => window.regionTracker.state.store.visits.map((v) => `${v.name}|${v.regionId}`));
+  const regionVisited = (id) => page.evaluate((i) => window.regionTracker.map.getFeatureState({ source: 'regions', sourceLayer: 'regions', id: i }).visited ?? false, id);
+  const OXFORDSHIRE = 'GB-X383397';
+  async function viewOxfordshire() {
+    await page.evaluate(() => window.regionTracker.map.jumpTo({ center: [-1.3, 51.85], zoom: 7.5 }));
+    await page.waitForFunction(() => window.regionTracker.map.loaded() && !window.regionTracker.map.isMoving());
+    await page.waitForTimeout(300);
+  }
+  async function clickRegionAwayFromDots() {
+    for (const ll of [[-1.55, 51.95], [-1.45, 51.9], [-1.2, 51.6], [-1.6, 51.7], [-1.0, 51.95]]) {
+      const c = await page.evaluate((ll) => {
+        const m = window.regionTracker.map; const q = m.project(ll); const r = document.querySelector('#map').getBoundingClientRect();
+        return { x: r.left + q.x, y: r.top + q.y, hit: m.queryRenderedFeatures([[q.x - 10, q.y - 10], [q.x + 10, q.y + 10]], { layers: ['places-dots', 'city-dots'] }).length };
+      }, ll);
+      if (!c.hit) { await page.mouse.click(c.x, c.y); return; }
+    }
+    throw new Error('no empty spot found');
+  }
+  await page.goto(url);
+  await ready(page);
+  await page.waitForFunction(() => window.regionTracker.state.store && window.regionTracker.state.meta);
+
+  await check('UK regions are counties: Oxford is in Oxfordshire', async () => {
+    await viewOxfordshire();
+    await clickRegionAwayFromDots();
+    await page.waitForSelector('#region-card:not([hidden])');
+    assert.match(await page.textContent('#region-card .card__title'), /^Oxfordshire$/);
+    assert.match(await page.textContent('#region-card .card__eyebrow'), /United Kingdom/);
+  });
+  await check('region card: one-tap buttons for its largest cities; tapping adds the city', async () => {
+    await page.waitForSelector('#region-card .chip');
+    const chips = await page.$$eval('#region-card .chip', (e) => e.map((x) => x.textContent.replace('+', '')));
+    assert.equal(chips[0], 'Oxford');
+    await page.click('#region-card .chip');
+    await page.waitForFunction(() => /Visited · 1 city/.test(document.querySelector('#region-card').textContent));
+    assert.deepEqual(await visits(), [`Oxford|${OXFORDSHIRE}`]);
+    assert.equal(await regionVisited(OXFORDSHIRE), true);
+    const chipsAfter = await page.$$eval('#region-card .chip', (e) => e.map((x) => x.textContent.replace('+', '')));
+    assert.ok(!chipsAfter.includes('Oxford'), 'a visited city is no longer offered');
+  });
+  await check('region card: search within the region', async () => {
+    await page.fill('#region-card .card__search', 'bic');
+    await page.waitForFunction(() => [...document.querySelectorAll('#region-card .card__results .chip')].some((c) => /Bicester/.test(c.textContent)));
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => /Visited · 2 cities/.test(document.querySelector('#region-card').textContent));
+    await page.fill('#region-card .card__search', 'zzzz');
+    assert.match(await page.textContent('#region-card .card__results'), /No city called “zzzz” in Oxfordshire/);
+  });
+  await check('region card: ✕ removes a city; removing the last one un-highlights the region', async () => {
+    await page.click('#region-card [aria-label="Remove Bicester"]');
+    await page.waitForFunction(() => /Visited · 1 city/.test(document.querySelector('#region-card').textContent));
+    await page.click('#region-card [aria-label="Remove Oxford"]');
+    await page.waitForFunction(() => /Not visited yet/.test(document.querySelector('#region-card').textContent));
+    assert.equal(await regionVisited(OXFORDSHIRE), false);
+    await page.click('.toast__action');           // Undo
+    await page.waitForFunction(() => window.regionTracker.state.store.visits.length === 1);
+    assert.equal(await regionVisited(OXFORDSHIRE), true);
+    await page.keyboard.press('Escape');
+  });
+  await check('tap a city on the map: popup with Add; then Visited + Remove', async () => {
+    const p = await page.evaluate(() => {           // Bicester's dot, wherever the data puts it
+      const m = window.regionTracker.map;
+      const f = m.queryRenderedFeatures({ layers: ['places-dots'] }).find((x) => x.properties.name === 'Bicester');
+      const q = m.project(f.geometry.coordinates); const r = document.querySelector('#map').getBoundingClientRect();
+      return { x: r.left + q.x, y: r.top + q.y };
+    });
+    await page.mouse.click(p.x, p.y);
+    await page.waitForSelector('.city-popup');
+    assert.match(await page.textContent('.city-popup'), /Bicester\s*Oxfordshire · United Kingdom/);
+    assert.equal(await page.evaluate(() => document.activeElement?.textContent), 'Add to my cities');
+    await page.keyboard.press('Enter');
+    await page.waitForFunction(() => /Visited/.test(document.querySelector('.city-popup')?.textContent ?? ''));
+    assert.ok((await visits()).includes(`Bicester|${OXFORDSHIRE}`));
+    await page.screenshot({ path: `${SHOTS}city-popup.png` });
+    await page.click('.city-popup .button--quiet');            // Remove
+    await page.waitForFunction(() => /Add to my cities/.test(document.querySelector('.city-popup')?.textContent ?? ''));
+    await page.keyboard.press('Escape');
+    assert.equal(await page.$('.city-popup'), null);
+  });
+  await check('show/hide other cities: hides dots and names, keeps visited dots, remembered', async () => {
+    const vis = (l) => page.evaluate((l) => window.regionTracker.map.getLayoutProperty(l, 'visibility') ?? 'visible', l);
+    await page.click('.places-toggle__button');
+    assert.equal(await vis('places-dots'), 'none');
+    assert.equal(await vis('places-labels'), 'none');
+    assert.equal(await vis('city-dots'), 'visible');
+    assert.equal(await page.getAttribute('.places-toggle__button', 'aria-label'), 'Show other cities on the map');
+    await page.reload();
+    await ready(page);
+    assert.equal(await vis('places-dots'), 'none');
+    await page.click('.places-toggle__button');
+    assert.equal(await vis('places-dots'), 'visible');
+  });
+  await check('cities saved under an older data version move to their new region (London: England -> Greater London)', async () => {
+    await page.evaluate(() => new Promise((resolve, reject) => {
+      const open = indexedDB.open('region-tracker', 1);
+      open.onsuccess = () => {
+        const tx = open.result.transaction(['visits', 'meta'], 'readwrite');
+        tx.objectStore('visits').put({ cityId: 'gn:2643743', name: 'London', lat: 51.50853, lon: -0.12574, countryIso: 'GB', regionId: 'GB-ENG', addedAt: '2026-11-14T10:00:00.000Z' });
+        tx.objectStore('meta').put('2026-10', 'dataVersion');
+        tx.oncomplete = () => resolve(); tx.onerror = () => reject(tx.error);
+      };
+    }));
+    await page.reload();
+    await ready(page);
+    await page.waitForFunction(() => window.regionTracker.state.store?.visits.find((v) => v.name === 'London')?.regionId === 'GB-XF82478', null, { timeout: 20_000 });
+    assert.equal(await regionVisited('GB-XF82478'), true);
+  });
+  await ctx.close();
+}
+
 // ---------- dark theme ----------
 {
   const { ctx, page } = await open({ colorScheme: 'dark' });
@@ -263,10 +387,9 @@ const GERMANY = [10.4, 51.1];
     await ready(page);
     await page.screenshot({ path: `${SHOTS}phone-globe.png` });
     await metaLoaded(page);
-    await page.evaluate(() => window.regionTracker.map.jumpTo({ center: [2.35, 48.86], zoom: 4 }));
+    await page.evaluate(() => window.regionTracker.map.jumpTo({ center: [2.35, 48.86], zoom: 6 }));
     await page.waitForFunction(() => window.regionTracker.map.loaded());
-    const p = await pixelOf(page, PARIS);
-    await page.touchscreen.tap(p.x, p.y);
+    await clickRegion(page, ILE_DE_FRANCE, { tap: true });
     await page.waitForSelector('#region-card:not([hidden])');
     await page.waitForFunction(() => document.getAnimations().length === 0);
     const box = await page.$eval('#region-card', (e) => e.getBoundingClientRect().toJSON());

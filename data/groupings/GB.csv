@@ -1,0 +1,220 @@
+# UK building blocks (Overture 'county' units) -> region. Hand-written from the official lists of
+# ceremonial counties (Lieutenancies Act 1997, as amended) and ISO 3166-2:GB. Checked by pipeline/tests/test_regions.py.
+# Stockton-on-Tees spans County Durham (north of the Tees, most of it) and North Yorkshire: placed in County Durham.
+match,region,local,key
+Bedford,Bedfordshire,,
+Central Bedfordshire,Bedfordshire,,
+Luton,Bedfordshire,,
+Bracknell Forest,Berkshire,,
+Reading,Berkshire,,
+Slough,Berkshire,,
+West Berkshire,Berkshire,,
+Windsor and Maidenhead,Berkshire,,
+Wokingham,Berkshire,,
+"Bristol, City of",Bristol,,
+Buckinghamshire,Buckinghamshire,,
+Milton Keynes,Buckinghamshire,,
+Cambridgeshire,Cambridgeshire,,
+Peterborough,Cambridgeshire,,
+Cheshire East,Cheshire,,
+Cheshire West and Chester,Cheshire,,
+Halton,Cheshire,,
+Warrington,Cheshire,,
+Cornwall,Cornwall,,
+Isles of Scilly,Cornwall,,
+Cumbria,Cumbria,,
+Derby,Derbyshire,,
+Derbyshire,Derbyshire,,
+Devon,Devon,,
+Plymouth,Devon,,
+Torbay,Devon,,
+Dorset,Dorset,,
+"Bournemouth, Christchurch and Poole",Dorset,,
+County Durham,County Durham,,
+Darlington,County Durham,,
+Hartlepool,County Durham,,
+Stockton-on-Tees,County Durham,,
+East Riding of Yorkshire,East Riding of Yorkshire,,
+"Kingston upon Hull, City of",East Riding of Yorkshire,,
+East Sussex,East Sussex,,
+Brighton and Hove,East Sussex,,
+Essex,Essex,,
+Southend-on-Sea,Essex,,
+Thurrock,Essex,,
+Gloucestershire,Gloucestershire,,
+South Gloucestershire,Gloucestershire,,
+City of London,Greater London,,
+Barking and Dagenham,Greater London,,
+Barnet,Greater London,,
+Bexley,Greater London,,
+Brent,Greater London,,
+Bromley,Greater London,,
+Camden,Greater London,,
+Croydon,Greater London,,
+Ealing,Greater London,,
+Enfield,Greater London,,
+Greenwich,Greater London,,
+Hackney,Greater London,,
+Hammersmith and Fulham,Greater London,,
+Haringey,Greater London,,
+Harrow,Greater London,,
+Havering,Greater London,,
+Hillingdon,Greater London,,
+Hounslow,Greater London,,
+Islington,Greater London,,
+Kensington and Chelsea,Greater London,,
+Kingston upon Thames,Greater London,,
+Lambeth,Greater London,,
+Lewisham,Greater London,,
+Merton,Greater London,,
+Newham,Greater London,,
+Redbridge,Greater London,,
+Richmond upon Thames,Greater London,,
+Southwark,Greater London,,
+Sutton,Greater London,,
+Tower Hamlets,Greater London,,
+Waltham Forest,Greater London,,
+Wandsworth,Greater London,,
+Westminster,Greater London,,
+Bolton,Greater Manchester,,
+Bury,Greater Manchester,,
+Manchester,Greater Manchester,,
+Oldham,Greater Manchester,,
+Rochdale,Greater Manchester,,
+Salford,Greater Manchester,,
+Stockport,Greater Manchester,,
+Tameside,Greater Manchester,,
+Trafford,Greater Manchester,,
+Wigan,Greater Manchester,,
+Hampshire,Hampshire,,
+Portsmouth,Hampshire,,
+Southampton,Hampshire,,
+"Herefordshire, County of",Herefordshire,,
+Hertfordshire,Hertfordshire,,
+Isle of Wight,Isle of Wight,,
+Kent,Kent,,
+Medway,Kent,,
+Lancashire,Lancashire,,
+Blackburn with Darwen,Lancashire,,
+Blackpool,Lancashire,,
+Leicester,Leicestershire,,
+Leicestershire,Leicestershire,,
+Lincolnshire,Lincolnshire,,
+North East Lincolnshire,Lincolnshire,,
+North Lincolnshire,Lincolnshire,,
+Knowsley,Merseyside,,
+Liverpool,Merseyside,,
+St. Helens,Merseyside,,
+Sefton,Merseyside,,
+Wirral,Merseyside,,
+Norfolk,Norfolk,,
+North Yorkshire,North Yorkshire,,
+York,North Yorkshire,,
+Middlesbrough,North Yorkshire,,
+Redcar and Cleveland,North Yorkshire,,
+Northamptonshire,Northamptonshire,,
+Northumberland,Northumberland,,
+Nottingham,Nottinghamshire,,
+Nottinghamshire,Nottinghamshire,,
+Oxfordshire,Oxfordshire,,
+Rutland,Rutland,,
+Shropshire,Shropshire,,
+Telford and Wrekin,Shropshire,,
+Somerset,Somerset,,
+Bath and North East Somerset,Somerset,,
+North Somerset,Somerset,,
+Barnsley,South Yorkshire,,
+Doncaster,South Yorkshire,,
+Rotherham,South Yorkshire,,
+Sheffield,South Yorkshire,,
+Staffordshire,Staffordshire,,
+Stoke-on-Trent,Staffordshire,,
+Suffolk,Suffolk,,
+Surrey,Surrey,,
+Gateshead,Tyne and Wear,,
+Newcastle upon Tyne,Tyne and Wear,,
+North Tyneside,Tyne and Wear,,
+South Tyneside,Tyne and Wear,,
+Sunderland,Tyne and Wear,,
+Warwickshire,Warwickshire,,
+Birmingham,West Midlands,,
+Coventry,West Midlands,,
+Dudley,West Midlands,,
+Sandwell,West Midlands,,
+Solihull,West Midlands,,
+Walsall,West Midlands,,
+Wolverhampton,West Midlands,,
+West Sussex,West Sussex,,
+Bradford,West Yorkshire,,
+Calderdale,West Yorkshire,,
+Kirklees,West Yorkshire,,
+Leeds,West Yorkshire,,
+Wakefield,West Yorkshire,,
+Wiltshire,Wiltshire,,
+Swindon,Wiltshire,,
+Worcestershire,Worcestershire,,
+Aberdeen City,Aberdeen City,,GB-ABE
+Aberdeenshire,Aberdeenshire,,GB-ABD
+Angus,Angus,,GB-ANS
+Argyll and Bute,Argyll and Bute,,GB-AGB
+City of Edinburgh,City of Edinburgh,,GB-EDH
+Clackmannanshire,Clackmannanshire,,GB-CLK
+Dumfries and Galloway,Dumfries and Galloway,,GB-DGY
+Dundee City,Dundee City,,GB-DND
+East Ayrshire,East Ayrshire,,GB-EAY
+East Dunbartonshire,East Dunbartonshire,,GB-EDU
+East Lothian,East Lothian,,GB-ELN
+East Renfrewshire,East Renfrewshire,,GB-ERW
+Falkirk,Falkirk,,GB-FAL
+Fife,Fife,,GB-FIF
+Glasgow City,Glasgow City,,GB-GLG
+Highland,Highland,,GB-HLD
+Inverclyde,Inverclyde,,GB-IVC
+Midlothian,Midlothian,,GB-MLN
+Moray,Moray,,GB-MRY
+Na h-Eileanan Siar,Na h-Eileanan Siar (Western Isles),,GB-ELS
+North Ayrshire,North Ayrshire,,GB-NAY
+North Lanarkshire,North Lanarkshire,,GB-NLK
+Orkney Islands,Orkney Islands,,GB-ORK
+Perth and Kinross,Perth and Kinross,,GB-PKN
+Renfrewshire,Renfrewshire,,GB-RFW
+Scottish Borders,Scottish Borders,,GB-SCB
+Shetland Islands,Shetland Islands,,GB-ZET
+South Ayrshire,South Ayrshire,,GB-SAY
+South Lanarkshire,South Lanarkshire,,GB-SLK
+Stirling,Stirling,,GB-STG
+West Dunbartonshire,West Dunbartonshire,,GB-WDU
+West Lothian,West Lothian,,GB-WLN
+Blaenau Gwent,Blaenau Gwent,,GB-BGW
+Bridgend,Bridgend,,GB-BGE
+Caerphilly,Caerphilly,,GB-CAY
+Cardiff,Cardiff,,GB-CRF
+Carmarthenshire,Carmarthenshire,,GB-CMN
+Ceredigion,Ceredigion,,GB-CGN
+Conwy,Conwy,,GB-CWY
+Denbighshire,Denbighshire,,GB-DEN
+Flintshire,Flintshire,,GB-FLN
+Gwynedd,Gwynedd,,GB-GWN
+Isle of Anglesey,Isle of Anglesey,,GB-AGY
+Merthyr Tydfil,Merthyr Tydfil,,GB-MTY
+Monmouthshire,Monmouthshire,,GB-MON
+Neath Port Talbot,Neath Port Talbot,,GB-NTL
+Newport,Newport,,GB-NWP
+Pembrokeshire,Pembrokeshire,,GB-PEM
+Powys,Powys,,GB-POW
+Rhondda Cynon Taf,Rhondda Cynon Taf,,GB-RCT
+Swansea,Swansea,,GB-SWA
+Torfaen,Torfaen,,GB-TOF
+Vale of Glamorgan,Vale of Glamorgan,,GB-VGL
+Wrexham,Wrexham,,GB-WRX
+Antrim and Newtownabbey,Antrim and Newtownabbey,,GB-ANN
+Ards and North Down,Ards and North Down,,GB-AND
+"Armagh City, Banbridge and Craigavon","Armagh City, Banbridge and Craigavon",,GB-ABC
+Belfast,Belfast,,GB-BFS
+Causeway Coast and Glens,Causeway Coast and Glens,,GB-CCG
+Derry City and Strabane,Derry City and Strabane,,GB-DRS
+Fermanagh and Omagh,Fermanagh and Omagh,,GB-FMO
+Lisburn and Castlereagh,Lisburn and Castlereagh,,GB-LBC
+Mid Ulster,Mid Ulster,,GB-MUL
+Mid and East Antrim,Mid and East Antrim,,GB-MEA
+"Newry, Mourne and Down","Newry, Mourne and Down",,GB-NMD

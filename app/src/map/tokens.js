@@ -3,7 +3,8 @@ export const MAP_TOKENS = [
   'water', 'space', 'atmosphere', 'land', 'region-line', 'country-line',
   'hover-fill', 'hover-opacity', 'selected-fill', 'selected-opacity', 'selected-line',
   'visited-fill', 'visited-opacity', 'visited-country-line', 'visited-country-opacity',
-  'city-dot', 'city-dot-stroke', 'label', 'label-strong', 'label-halo',
+  'city-dot', 'city-dot-stroke', 'place-dot', 'place-dot-stroke', 'place-label', 'visited-label',
+  'label', 'label-strong', 'label-halo',
 ];
 
 export function readMapTokens(el = document.documentElement) {

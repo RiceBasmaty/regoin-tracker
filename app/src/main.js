@@ -9,6 +9,9 @@ import { createNotices } from './ui/notices.js';
 import { createToast } from './ui/toast.js';
 import { createSearchBox } from './ui/search-box.js';
 import { createProjectionToggle, savedProjection } from './ui/projection-toggle.js';
+import { PlacesToggleControl, savedPlacesVisible } from './ui/places-toggle.js';
+import { createCityPopup } from './ui/city-popup.js';
+import { loadRegionPlaces } from './data/region-places.js';
 import { loadMeta } from './data/meta.js';
 import { openStorage } from './data/storage.js';
 import { createVisitsStore } from './data/visits-store.js';
@@ -19,7 +22,7 @@ import { dataUrl, DATA_VERSION } from './config.js';
 const $ = (sel) => document.querySelector(sel);
 const notices = createNotices($('#notices'));
 const toast = createToast($('#toast'));
-const state = { meta: null, selected: null, store: null };
+const state = { meta: null, selected: null, store: null, places: new Map() };
 
 function fatal(text) {
   $('#map').dataset.state = 'error';
@@ -34,20 +37,38 @@ if (!webglSupported()) {
 
 function start() {
   const visits = () => state.store?.visits ?? [];
-  const cardModel = (id) => describeRegion(id, { ...state.meta, visits: visits() });
+  const cardModel = (id) => describeRegion(id, { ...state.meta, visits: visits(), places: state.places.get(id) ?? null });
   const closeCard = () => { rm.select(null); state.selected = null; card.hide(); };
-  const card = createRegionCard($('#region-card'), { onClose: closeCard });
+  const card = createRegionCard($('#region-card'), {
+    onClose: closeCard,
+    onAdd: (p) => addCity({ ...p, countryIso: state.meta?.regions?.[p.regionId]?.cc ?? p.regionId.split('-')[0] }, { fly: false }),
+    onRemove: (c) => removeCity(c.cityId),
+  });
+  function openCard(id) {
+    card.show(cardModel(id));
+    if (!state.places.has(id)) {
+      loadRegionPlaces(id).then((list) => { state.places.set(id, list); card.update(cardModel(id)); })
+        .catch((err) => { console.warn('[places]', err); state.places.set(id, []); card.update(cardModel(id)); });
+    }
+  }
   const tooltip = $('#tooltip');
   const projection = savedProjection('globe');
+  const showPlaces = savedPlacesVisible();
 
   const rm = createRegionMap({
     container: $('#map'),
     tokens: readMapTokens(),
     projection,
+    showPlaces,
+    onCityClick(city) {
+      tooltip.hidden = true;
+      cityPopup.open(city);
+    },
     onSelect(id) {
+      cityPopup.close();
       state.selected = id;
       if (id == null) return card.hide();
-      card.show(cardModel(id));
+      openCard(id);
     },
     onHover(id, point) {
       if (id == null || !state.meta) { tooltip.hidden = true; return; }
@@ -70,6 +91,21 @@ function start() {
   });
 
   createProjectionToggle($('#projection-toggle'), { value: projection, onChange: (v) => rm.setProjection(v) });
+  rm.addControl(new PlacesToggleControl({ visible: showPlaces, onChange: (on) => { rm.setPlacesVisible(on); if (!on) cityPopup.close(); } }));
+
+  // ---------- tap a city on the map: popup with Add / Remove (D35) ----------
+  const regionOf = (rid) => state.meta?.regions?.[rid];
+  const cityPopup = createCityPopup(rm.map, {
+    describe(city) {
+      const r = regionOf(city.regionId);
+      const country = r ? state.meta.countries?.[r.cc]?.name ?? r.cc : '';
+      const regionName = r?.name ?? city.regionId;
+      return { placeLine: country && country !== regionName ? `${regionName} · ${country}` : regionName };
+    },
+    isVisited: (cityId) => state.store?.has(cityId) ?? false,
+    onAdd: (city) => addCity({ ...city, countryIso: regionOf(city.regionId)?.cc ?? city.regionId.split('-')[0] }, { fly: false }),
+    onRemove: (city) => removeCity(city.cityId),
+  });
 
   // ---------- visited cities: the device store is the source of truth ----------
   const index = createSearchIndex();
@@ -78,10 +114,17 @@ function start() {
     rm.setVisited({ regions: [...regions.keys()], countries: [...countries.keys()], cities: visits() });
     if (state.selected) card.update(cardModel(state.selected));
     search.refresh();
+    cityPopup.refresh();
   }
 
-  async function addCity(s) {
-    rm.flyTo(s);
+  async function removeCity(cityId) {
+    const visit = await state.store?.remove(cityId);
+    if (!visit) return;
+    toast.show(`Removed ${visit.name}`, { label: 'Undo', onClick: () => state.store.restore(visit) });
+  }
+
+  async function addCity(s, { fly = true } = {}) {
+    if (fly) rm.flyTo(s);
     if (!state.store) return;
     try {
       const { added, visit } = await state.store.add(s);
@@ -159,7 +202,9 @@ function start() {
   if (!navigator.onLine) showOffline();
 
   addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && card.open) closeCard();
+    if (e.key !== 'Escape') return;
+    if (cityPopup.city) cityPopup.close();
+    else if (card.open) closeCard();
   });
 
   // For troubleshooting from the browser console: regionTracker.map, regionTracker.state

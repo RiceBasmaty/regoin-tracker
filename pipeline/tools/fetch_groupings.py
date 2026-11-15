@@ -1,0 +1,102 @@
+"""Regenerate data/groupings/{SI,MK,MT}.csv from Wikidata (run by hand, rarely; output is committed).
+
+Which municipality / local council belongs to which statistical region is read from Wikidata:
+  SI, MK: municipality (ISO 3166-2 code, P300) -> "located in the statistical territorial entity" (P8138)
+  MT:     region of Malta -> contains / is contained in (P150 / P131) -> local council (P300)
+The build itself never calls Wikidata; it reads the committed CSVs, so builds stay reproducible.
+Manual rows (Wikidata gaps) are kept in MANUAL below, each with a reason.
+
+Usage:  ../.venv/bin/python tools/fetch_groupings.py            (live query; Wikidata may rate-limit)
+        ../.venv/bin/python tools/fetch_groupings.py --cache DIR (reuse saved wd-stat.json / wd-groups.json)
+"""
+import csv
+import json
+import sys
+import time
+import urllib.parse
+import urllib.request
+from datetime import date
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[2]
+OUT = ROOT / "data" / "groupings"
+UA = "region-tracker-pipeline/1.0 (data build script)"
+
+STAT = '''SELECT ?iso ?munLabel ?regLabel WHERE {
+ ?mun wdt:P300 ?iso. FILTER(STRSTARTS(?iso, "SI-") || STRSTARTS(?iso, "MK-"))
+ ?mun wdt:P8138 ?reg. SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } }'''
+MALTA = '''SELECT ?kind ?regLabel ?iso WHERE {
+ VALUES ?kind {"region of Malta"@en} ?cls rdfs:label ?kind. ?reg wdt:P31 ?cls.
+ { ?reg wdt:P150 ?mun } UNION { ?mun wdt:P131 ?reg } ?mun wdt:P300 ?iso.
+ SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } }'''
+
+# Display names (English, as used by the national statistics offices) and local names.
+NAMES = {
+    "SI": {
+        "Pomurska": ("Mura", "Pomurska"), "Podravska": ("Drava", "Podravska"), "Koroška": ("Carinthia", "Koroška"),
+        "Savinjska": ("Savinja", "Savinjska"), "Zasavska": ("Central Sava", "Zasavska"), "Posavska": ("Lower Sava", "Posavska"),
+        "Southeast Slovenia Statistical Region": ("Southeast Slovenia", "Jugovzhodna Slovenija"),
+        "Central Slovenia Statistical Region": ("Central Slovenia", "Osrednjeslovenska"),
+        "Upper Carniola Statistical Region": ("Upper Carniola", "Gorenjska"),
+        "Primorsko-notranjska": ("Littoral–Inner Carniola", "Primorsko-notranjska"),
+        "Gorizia Statistical Region": ("Gorizia", "Goriška"), "Coastal-Karst Statistical Region": ("Coastal–Karst", "Obalno-kraška"),
+    },
+    "MK": {k: (k.replace(" Statistical Region", " Region"), "") for k in [
+        "Polog Statistical Region", "Skopje Statistical Region", "Southwestern Statistical Region", "Vardar Statistical Region",
+        "Northeastern Statistical Region", "Eastern Statistical Region", "Southeastern Statistical Region", "Pelagonia Statistical Region"]},
+    "MT": {"Eastern Region": ("Eastern Region", "Reġjun Lvant"), "Western Region": ("Western Region", "Reġjun Punent"),
+           "Port Region": ("Port Region", "Reġjun Port"), "Northern Region": ("Northern Region", "Reġjun Tramuntana"),
+           "Southern Region": ("Southern Region", "Reġjun Nofsinhar"), "Gozo Region (Għawdex)": ("Gozo Region", "Reġjun Għawdex")},
+}
+MANUAL = {  # Overture building blocks Wikidata does not link; each with a reason
+    "MK": [("Град Скопје", "Skopje Statistical Region", "City of Skopje: no ISO code in Overture; it is the Skopje Statistical Region's core"),
+           ("MK-508", "Pelagonia Statistical Region", "Prilep: missing P8138 in Wikidata; Prilep is in Pelagonia (State Statistical Office)")],
+}
+
+
+def sparql(query):
+    url = "https://query.wikidata.org/sparql?format=json&query=" + urllib.parse.quote(query)
+    for _ in range(5):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": UA, "Accept": "application/sparql-results+json"})
+            with urllib.request.urlopen(req, timeout=120) as r:
+                return [{k: v["value"] for k, v in b.items()} for b in json.load(r)["results"]["bindings"]]
+        except urllib.error.HTTPError as e:
+            if e.code != 429:
+                raise
+            time.sleep(65)   # Wikidata asks for at most 1 query per minute during incidents
+    raise SystemExit("Wikidata keeps rate-limiting; try again later")
+
+
+def main():
+    if "--cache" in sys.argv:
+        d = Path(sys.argv[sys.argv.index("--cache") + 1])
+        stat = json.loads((d / "wd-stat.json").read_text())
+        malta = [r for r in json.loads((d / "wd-groups.json").read_text()) if r.get("kind") == "region of Malta"]
+    else:
+        stat = sparql(STAT)
+        time.sleep(61)
+        malta = sparql(MALTA)
+    rows = {"SI": {}, "MK": {}, "MT": {}}
+    for r in stat:
+        rows[r["iso"][:2]][r["iso"]] = r["regLabel"]
+    for r in malta:
+        rows["MT"][r["iso"]] = r["regLabel"]
+    for cc, items in rows.items():
+        with open(OUT / f"{cc}.csv", "w", newline="", encoding="utf-8") as f:
+            f.write(f"# {cc}: building block -> statistical region. Generated by pipeline/tools/fetch_groupings.py from Wikidata\n"
+                    f"# (CC0) on {date.today().isoformat()}. Do not edit by hand; add exceptions to MANUAL in that script.\n")
+            w = csv.writer(f)
+            w.writerow(["match", "region", "local", "key"])
+            for iso in sorted(items):
+                name, local = NAMES[cc][items[iso]]
+                w.writerow([iso, name, local, ""])
+            for match, label, reason in MANUAL.get(cc, []):
+                name, local = NAMES[cc][label]
+                f.write(f"# manual: {reason}\n")
+                w.writerow([match, name, local, ""])
+        print(cc, len(items) + len(MANUAL.get(cc, [])), "rows")
+
+
+if __name__ == "__main__":
+    main()

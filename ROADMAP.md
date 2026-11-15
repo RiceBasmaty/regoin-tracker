@@ -7,15 +7,15 @@ The plan approved by Dmitry on 2026-11-14. The details of each finished phase li
 | 0. Data pipeline | ✅ done |
 | 1. Map shell | ✅ done |
 | 2. Add a city (search) | ✅ done |
-| 3. Map-first adding + better regions | next (agreed 2026-11-14) |
-| 4. Progress and polish | planned |
+| 3. Map-first adding + better regions | ✅ done |
+| 4. Progress and polish | next |
 | 5. Deploy and harden | planned |
 | 6. Accounts and sync | later |
 
 ## Phase 2: Add a city (search) ✅
 Search bar, saving on the device, dots, visited regions and countries, fly-to, "Added · Undo". See DECISIONS D31–D34.
 
-## Phase 3: Map-first adding + better regions (agreed with Dmitry 2026-11-14)
+## Phase 3: Map-first adding + better regions ✅ (agreed 2026-11-14, done 2026-11-15; see D37–D39)
 Feedback: the map, not the search bar, should be the main way to add cities, and some countries' regions are the wrong size.
 
 **Region level per country** (new table `data/region-levels.csv`, every row with a reason):
