@@ -9,7 +9,7 @@ The plan approved by Dmitry on 2026-11-14. The details of each finished phase li
 | 2. Add a city (search) | ✅ done |
 | 3. Map-first adding + better regions | ✅ done |
 | 3.1 Map readability (text hierarchy, lakes, France) | ✅ done |
-| 4. Progress and polish | next |
+| 4. Progress and polish | next (Dmitry has feedback first, 2026-11-16) |
 | 5. Deploy and harden | planned |
 | 6. Accounts and sync | later |
 

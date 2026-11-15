@@ -69,7 +69,8 @@ Visited cities:
 0. **Data pipeline:** region and country PMTiles, a city index with precomputed regions, and validation tests. No UI yet. ✅
 1. **Map shell:** map/globe toggle, borders, hover, click popup. ✅
 2. **Add a city (search):** the search flow above, saving visits, region highlighting, city dots. ✅
-3. **Map-first adding + better regions:** cities on the map (dots, names when zoomed in, show/hide control), tap a city → popup with Add/Remove, quick-add chips and scoped search in the region card, per-country region levels (D35, D36). Never a region without a city.
+3. **Map-first adding + better regions:** cities on the map (dots, names when zoomed in, show/hide control), tap a city → popup with Add/Remove, quick-add chips and scoped search in the region card, per-country region levels (D35, D36). Never a region without a city. ✅
+3.1 **Map readability:** text hierarchy by size and weight, fewer dots, lakes and major rivers, France's 22 historical regions, "Map display" panel (city dots / names) (D41–D44). ✅
 4. **Progress and polish:** visited-cities list, small counter (cities · countries · regions), export/import, flags, accessibility, attribution.
 5. **Deploy and harden:** Cloudflare (free tier), caching, edge-served tiles, security headers (CSP), error logging, performance check.
 6. **Post-MVP:** accounts and sync (Supabase).
